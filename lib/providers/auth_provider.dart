@@ -42,4 +42,29 @@ class AuthProvider extends ChangeNotifier {
     _currentUser = null;
     notifyListeners();
   }
+
+  // أضيفي هذه الدالة داخل class AuthProvider
+
+  Future<bool> register(String name, String email, String password, UserType userType) async {
+    _isLoading = true;
+    notifyListeners();
+
+    await Future.delayed(const Duration(seconds: 1));
+
+    if (name.isNotEmpty && email.isNotEmpty && password.isNotEmpty) {
+      _currentUser = UserModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        name: name,
+        email: email,
+        userType: userType,
+      );
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    }
+
+    _isLoading = false;
+    notifyListeners();
+    return false;
+  }
 }

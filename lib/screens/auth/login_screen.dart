@@ -7,6 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../admin/admin_home_screen.dart';
 import '../trainer/trainer_home_screen.dart';
 import '../trainee/trainee_home_screen.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -27,14 +28,13 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        // صورة الخلفية
         decoration: const BoxDecoration(
           image: DecorationImage(
             image: AssetImage('assets/background_login.jpg'),
             fit: BoxFit.cover,
             alignment: Alignment(0.1, 0),
           ),
-        ), //خلصت هون
+        ),
         child: Consumer<AuthProvider>(
           builder: (context, authProvider, child) {
             if (authProvider.isLoading) {
@@ -46,251 +46,177 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: SingleChildScrollView(
-                    child: ClipRRect( // الصندوق الخارجي
-                      //ClipRRect يقص الأبناء بزوايا دائرية
+                    child: ClipRRect(
                       borderRadius: BorderRadius.circular(24),
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 0.8, sigmaY: 0.8),
                         child: Container(
-                          margin: const EdgeInsets.all(3),
+                          padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(27),
-                            boxShadow: [
-                              // نيون الصندوق الخارجي
-                              BoxShadow(
-                                color: Colors.transparent,
-                                blurRadius: 35, // يتحكم بانتشار الضوء
-                                spreadRadius: 8, //توسيع الظل من كل الاتجاهات
-                              ),
-                              BoxShadow(
-                                color: Colors.transparent,
-                                blurRadius: 50,
-                                spreadRadius: 5,
-                              ),
-                              BoxShadow(
-                                color: Colors.white.withOpacity(0.4),
-                                blurRadius: 20,
-                                spreadRadius: 2,
-                              ),
-                            ],
-                          ),
-                          child: Container(
-                            padding: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.4),
-                              borderRadius: BorderRadius.circular(24),
-                              border: Border.all(
-                                color: Colors.deepPurple.withOpacity(0.7),
-                                width: 1.5,
-                              ),
+                            color: Colors.black.withOpacity(0.4),
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: Colors.deepPurple.withOpacity(0.7),
+                              width: 1.5,
                             ),
-                            child: Form(
-                              key: _formKey,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Center(
-                                    child: Text(
-                                      'EMPOWEAR',
-                                      style: const TextStyle(
-                                        fontSize: 32,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                        letterSpacing: 2,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 40),
-
-                                  const Text(
-                                    'Choose Role:',
-                                    style: TextStyle(
-                                      fontSize: 16,
+                          ),
+                          child: Form(
+                            key: _formKey,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Center(
+                                  child: Text(
+                                    'EMPOWEAR',
+                                    style: const TextStyle(
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.bold,
                                       color: Colors.white,
-                                      fontWeight: FontWeight.w500,
+                                      letterSpacing: 2,
                                     ),
                                   ),
-                                  const SizedBox(height: 8),
+                                ),
+                                const SizedBox(height: 40),
 
-                                  // أزرار الأدوار مع نيون
-                                  Row(
-                                    children: [
-                                      _buildRoleButton(UserType.admin, 'Admin', _selectedUserType == UserType.admin),
-                                      const SizedBox(width: 12),
-                                      _buildRoleButton(UserType.trainer, 'Trainer', _selectedUserType == UserType.trainer),
-                                      const SizedBox(width: 12),
-                                      _buildRoleButton(UserType.trainee, 'Trainee', _selectedUserType == UserType.trainee),
-                                    ],
+                                const Text(
+                                  'please enter your information:',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w400,
                                   ),
+                                ),
 
-                                  const SizedBox(height: 32),
-
-                                  // حقل Email مع نيون
-                                  Container(
-                                    decoration: BoxDecoration(
+                                const SizedBox(height: 16),
+                                // حقل Email
+                                TextFormField(
+                                  controller: _emailController,
+                                  style: const TextStyle(color: Colors.white),
+                                  decoration: InputDecoration(
+                                    labelText: 'Email',
+                                    labelStyle: const TextStyle(color: Colors.white70),
+                                    prefixIcon: const Icon(Icons.email, color: Colors.white70),
+                                    filled: true,
+                                    fillColor: Colors.white.withOpacity(0.15),
+                                    border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.transparent,  // شفاف تماماً
-
-                                          blurRadius: 12,
-                                          spreadRadius: 0,
-                                        ),
-                                      ],
+                                      borderSide: BorderSide.none,
                                     ),
-                                    child: TextFormField(
-                                      controller: _emailController,
-                                      style: const TextStyle(color: Colors.white),
-                                      decoration: InputDecoration(
-                                        labelText: 'Email',
-                                        labelStyle: const TextStyle(color: Colors.white70),
-                                        prefixIcon: const Icon(Icons.email, color: Colors.white70),
-                                        filled: true,
-                                        fillColor: Colors.white.withOpacity(0.15),
-                                        border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide.none,
-                                        ),
-                                        enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide(
-                                            color: Colors.deepPurple.withOpacity(0.8),
-                                            width: 1.5,
-                                          ),
-                                        ),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: const BorderSide(
-                                            color: Colors.deepPurple,
-                                            width: 2.5,
-                                          ),
-                                        ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: Colors.deepPurple.withOpacity(0.8),
+                                        width: 1.5,
                                       ),
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return 'Please enter your email';
-                                        }
-                                        return null;
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(
+                                        color: Colors.deepPurple,
+                                        width: 2.5,
+                                      ),
+                                    ),
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Please enter your email';
+                                    }
+                                    return null;
+                                  },
+                                ),
+
+                                const SizedBox(height: 16),
+
+                                // حقل Password
+                                TextFormField(
+                                  controller: _passwordController,
+                                  obscureText: _obscurePassword,
+                                  style: const TextStyle(color: Colors.white),
+                                  decoration: InputDecoration(
+                                    labelText: 'Password',
+                                    labelStyle: const TextStyle(color: Colors.white70),
+                                    prefixIcon: const Icon(Icons.lock, color: Colors.white70),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                                        color: Colors.white70,
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          _obscurePassword = !_obscurePassword;
+                                        });
                                       },
                                     ),
-                                  ),
-
-                                  const SizedBox(height: 16),
-
-                                  // حقل Password مع نيون
-                                  Container(
-                                    decoration: BoxDecoration(
+                                    filled: true,
+                                    fillColor: Colors.white.withOpacity(0.15),
+                                    border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.deepPurple.withOpacity(0.8),
-                                          blurRadius: 12,
-                                          spreadRadius: 0,
-                                        ),
-                                      ],
+                                      borderSide: BorderSide.none,
                                     ),
-                                    child: TextFormField(
-                                      controller: _passwordController,
-                                      obscureText: _obscurePassword,
-                                      style: const TextStyle(color: Colors.white),
-                                      decoration: InputDecoration(
-                                        labelText: 'Password',
-                                        labelStyle: const TextStyle(color: Colors.white70),
-                                        prefixIcon: const Icon(Icons.lock, color: Colors.white70),
-                                        suffixIcon: IconButton(
-                                          icon: Icon(
-                                            _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                                            color: Colors.white70,
-                                          ),
-                                          onPressed: () {
-                                            setState(() {
-                                              _obscurePassword = !_obscurePassword;
-                                            });
-                                          },
-                                        ),
-                                        filled: true,
-                                        fillColor: Colors.white.withOpacity(0.15),
-                                        border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide.none,
-                                        ),
-                                        enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide(
-                                            color: Colors.deepPurple.withOpacity(0.8),
-                                            width: 1.5,
-                                          ),
-                                        ),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: const BorderSide(
-                                            color: Colors.deepPurple,
-                                            width: 2.5,
-                                          ),
-                                        ),
-                                      ),
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return 'Please enter your password';
-                                        }
-                                        return null;
-                                      },
-                                    ),
-                                  ),
-
-                                  const SizedBox(height: 32),
-
-                                  // زر Sign In مع نيون
-                                  Container(
-                                    decoration: BoxDecoration(
+                                    enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.deepPurple.withOpacity(1.0),
-                                          blurRadius: 20,
-                                          spreadRadius: 2,
-                                        ),
-                                        BoxShadow(
-                                          color: Colors.deepPurpleAccent.withOpacity(0.8),
-                                          blurRadius: 35,
-                                          spreadRadius: 1,
-                                        ),
-                                      ],
+                                      borderSide: BorderSide(
+                                        color: Colors.deepPurple.withOpacity(0.8),
+                                        width: 1.5,
+                                      ),
                                     ),
-                                    child: SizedBox(
-                                      width: double.infinity,
-                                      child: ElevatedButton(
-                                        onPressed: () => _login(authProvider),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.deepPurple,
-                                          foregroundColor: Colors.white,
-                                          shadowColor: Colors.transparent,
-                                          padding: const EdgeInsets.symmetric(vertical: 16),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          'Sign In',
-                                          style: TextStyle(fontSize: 18),
-                                        ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(
+                                        color: Colors.deepPurple,
+                                        width: 2.5,
                                       ),
                                     ),
                                   ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Please enter your password';
+                                    }
+                                    return null;
+                                  },
+                                ),
 
-                                  const SizedBox(height: 16),
+                                const SizedBox(height: 32),
 
-                                  Center(
-                                    child: TextButton(
-                                      onPressed: () {},
-                                      child: const Text(
-                                        "Don't have an account? Sign up",
-                                        style: TextStyle(color: Colors.white70),
+                                // زر Sign In
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: () => _login(authProvider),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.deepPurple,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
                                     ),
+                                    child: const Text(
+                                      'Sign In',
+                                      style: TextStyle(fontSize: 18),
+                                    ),
                                   ),
-                                ],
-                              ),
+                                ),
+
+                                const SizedBox(height: 16),
+
+                                Center(
+                                  child: TextButton(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => const RegisterScreen(),
+                                        ),
+                                      );
+                                    },
+                                    child: const Text(
+                                      "Don't have an account? Sign up",
+                                      style: TextStyle(color: Colors.white70),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -315,38 +241,24 @@ class _LoginScreenState extends State<LoginScreen> {
           });
         },
         child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
+            color: isSelected
+                ? Colors.deepPurple
+                : Colors.white.withOpacity(0.15),
             borderRadius: BorderRadius.circular(12),
-            boxShadow: isSelected
-                ? [
-              BoxShadow(
-                color: Colors.deepPurple.withOpacity(0.9),
-                blurRadius: 14,
-                spreadRadius: 1,
-              ),
-            ]
-                : [],
-          ),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
+            border: Border.all(
               color: isSelected
                   ? Colors.deepPurple
-                  : Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected
-                    ? Colors.deepPurple
-                    : Colors.white.withOpacity(0.3),
-              ),
+                  : Colors.white.withOpacity(0.3),
             ),
-            child: Center(
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.white70,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                ),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.white70,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
           ),
