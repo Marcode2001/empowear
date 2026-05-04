@@ -1,5 +1,4 @@
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/user_model.dart';
@@ -9,6 +8,7 @@ import '../trainer/trainer_home_screen.dart';
 import '../trainee/trainee_home_screen.dart';
 import 'register_screen.dart';
 
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -16,105 +16,256 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
+  // ==================== المتغيرات ====================
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  UserType _selectedUserType = UserType.trainee;
   bool _obscurePassword = true;
+
+  // متغيرات الأنيميشن
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _rotationAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+
+    _fadeAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOut,
+    );
+
+    _scaleAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutBack,
+    ));
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.5),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutCubic,
+    ));
+
+    _rotationAnimation = Tween<double>(
+      begin: -0.1,
+      end: 0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutBack,
+    ));
+
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/background_login.jpg'),
-            fit: BoxFit.cover,
-            alignment: Alignment(0.1, 0),
-          ),
-        ),
-        child: Consumer<AuthProvider>(
-          builder: (context, authProvider, child) {
-            if (authProvider.isLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
+      // ✅ منع إعادة ترتيب المحتوى عند ظهور الكيبورد
+      resizeToAvoidBottomInset: true,
+      body: Stack(
+        children: [
 
-            return SafeArea(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: SingleChildScrollView(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 0.8, sigmaY: 0.8),
-                        child: Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.4),
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: Colors.deepPurple.withOpacity(0.7),
-                              width: 1.5,
+          // ==================== صورة PNG ثابتة (لن تتحرك) ====================
+          // ✅ استخدام Positioned.fill لتثبيت الصورة في الخلفية
+          Positioned.fill(
+            top: 200,
+            right: -150,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Opacity(
+                opacity: 0.15,
+                child: Image.asset(
+                  'assets/login-01.png',
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ),
+
+
+          // ==================== المحتوى الرئيسي ====================
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 32, vertical: 20),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // ==================== شعار الدائرة ====================
+                    FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: ScaleTransition(
+                        scale: _scaleAnimation,
+                        child: RotationTransition(
+                          turns: _rotationAnimation,
+                          child: Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF6C63FF), Color(0xFF9C27B0)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF6C63FF).withOpacity(
+                                      0.3),
+                                  blurRadius: 20,
+                                  spreadRadius: 5,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
                             ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.auto_awesome,
+                                size: 45,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // ==================== عنوان التطبيق مع تأثيرات ====================
+                    FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: SlideTransition(
+                        position: _slideAnimation,
+                        child: ShaderMask(
+                          shaderCallback: (bounds) =>
+                              const LinearGradient(
+                                colors: [
+                                  Color(0xFF6C63FF),
+                                  Color(0xFF9C27B0),
+                                  Color(0xFFE040FB)
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ).createShader(bounds),
+                          child: Text(
+                            'EMPOWEAR',
+                            style: TextStyle(
+                              fontSize: 36,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 6,
+                              shadows: [
+                                Shadow(
+                                  color: const Color(0xFF6C63FF).withOpacity(
+                                      0.5),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 2),
+                                ),
+                                Shadow(
+                                  color: const Color(0xFF9C27B0).withOpacity(
+                                      0.3),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // ==================== صندوق تسجيل الدخول ====================
+                    FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: SlideTransition(
+                        position: _slideAnimation,
+                        child: Container(
+                          padding: const EdgeInsets.all(28),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.0),
+                            borderRadius: BorderRadius.circular(32),
+
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.1),
+                                blurRadius: 20,
+                                spreadRadius: 5,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
                           ),
                           child: Form(
                             key: _formKey,
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Center(
-                                  child: Text(
-                                    'EMPOWEAR',
-                                    style: const TextStyle(
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                      letterSpacing: 2,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 40),
-
-                                const Text(
-                                  'please enter your information:',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                ),
-
-                                const SizedBox(height: 16),
-                                // حقل Email
+                                // ==================== حقل الإيميل ====================
                                 TextFormField(
                                   controller: _emailController,
-                                  style: const TextStyle(color: Colors.white),
+                                  style: const TextStyle(color: Colors.black87),
                                   decoration: InputDecoration(
-                                    labelText: 'Email',
-                                    labelStyle: const TextStyle(color: Colors.white70),
-                                    prefixIcon: const Icon(Icons.email, color: Colors.white70),
+                                    labelText: 'Email Address',
+                                    labelStyle: TextStyle(
+                                      color: Colors.grey[400],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    prefixIcon: Icon(
+                                      Icons.email_outlined,
+                                      color: const Color(0xFF6C63FF),
+                                    ),
                                     filled: true,
-                                    fillColor: Colors.white.withOpacity(0.15),
+                                    fillColor: Colors.grey.shade50.withOpacity(
+                                        0.02),
                                     border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(16),
                                       borderSide: BorderSide.none,
                                     ),
                                     enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(16),
                                       borderSide: BorderSide(
-                                        color: Colors.deepPurple.withOpacity(0.8),
-                                        width: 1.5,
+                                        color: Colors.purple.withOpacity(0.2),
+                                        width: 1,
                                       ),
                                     ),
                                     focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(16),
                                       borderSide: const BorderSide(
-                                        color: Colors.deepPurple,
-                                        width: 2.5,
+                                        color: Color(0xFF6C63FF),
+                                        width: 2,
                                       ),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 16,
                                     ),
                                   ),
                                   validator: (value) {
@@ -124,22 +275,29 @@ class _LoginScreenState extends State<LoginScreen> {
                                     return null;
                                   },
                                 ),
-
                                 const SizedBox(height: 16),
 
-                                // حقل Password
+                                // ==================== حقل كلمة المرور ====================
                                 TextFormField(
                                   controller: _passwordController,
                                   obscureText: _obscurePassword,
-                                  style: const TextStyle(color: Colors.white),
+                                  style: const TextStyle(color: Colors.black87),
                                   decoration: InputDecoration(
                                     labelText: 'Password',
-                                    labelStyle: const TextStyle(color: Colors.white70),
-                                    prefixIcon: const Icon(Icons.lock, color: Colors.white70),
+                                    labelStyle: TextStyle(
+                                      color: Colors.grey[400],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    prefixIcon: Icon(
+                                      Icons.lock_outline,
+                                      color: const Color(0xFF6C63FF),
+                                    ),
                                     suffixIcon: IconButton(
                                       icon: Icon(
-                                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                                        color: Colors.white70,
+                                        _obscurePassword
+                                            ? Icons.visibility_off
+                                            : Icons.visibility,
+                                        color: Colors.grey[400],
                                       ),
                                       onPressed: () {
                                         setState(() {
@@ -148,24 +306,29 @@ class _LoginScreenState extends State<LoginScreen> {
                                       },
                                     ),
                                     filled: true,
-                                    fillColor: Colors.white.withOpacity(0.15),
+                                    fillColor: Colors.grey.shade50.withOpacity(
+                                        0.02),
                                     border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(16),
                                       borderSide: BorderSide.none,
                                     ),
                                     enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(16),
                                       borderSide: BorderSide(
-                                        color: Colors.deepPurple.withOpacity(0.8),
-                                        width: 1.5,
+                                        color: Colors.purple.withOpacity(0.2),
+                                        width: 1,
                                       ),
                                     ),
                                     focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(16),
                                       borderSide: const BorderSide(
-                                        color: Colors.deepPurple,
-                                        width: 2.5,
+                                        color: Color(0xFF6C63FF),
+                                        width: 2,
                                       ),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 16,
                                     ),
                                   ),
                                   validator: (value) {
@@ -175,45 +338,80 @@ class _LoginScreenState extends State<LoginScreen> {
                                     return null;
                                   },
                                 ),
-
                                 const SizedBox(height: 32),
 
-                                // زر Sign In
+                                // ==================== زر تسجيل الدخول ====================
                                 SizedBox(
                                   width: double.infinity,
-                                  child: ElevatedButton(
-                                    onPressed: () => _login(authProvider),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.deepPurple,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(vertical: 16),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                    child: const Text(
-                                      'Sign In',
-                                      style: TextStyle(fontSize: 18),
-                                    ),
-                                  ),
-                                ),
-
-                                const SizedBox(height: 16),
-
-                                Center(
-                                  child: TextButton(
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => const RegisterScreen(),
+                                  child: Consumer<AuthProvider>(
+                                    builder: (context, authProvider, child) {
+                                      return AnimatedContainer(
+                                        duration: const Duration(
+                                            milliseconds: 300),
+                                        decoration: BoxDecoration(
+                                          gradient: const LinearGradient(
+                                            colors: [
+                                              Color(0xFF6C63FF),
+                                              Color(0xFF9C27B0)
+                                            ],
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                              30),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: const Color(0xFF6C63FF)
+                                                  .withOpacity(0.4),
+                                              blurRadius: 15,
+                                              spreadRadius: 5,
+                                            ),
+                                          ],
+                                        ),
+                                        child: ElevatedButton(
+                                          onPressed: authProvider.isLoading
+                                              ? null
+                                              : () => _login(authProvider),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.transparent,
+                                            shadowColor: Colors.transparent,
+                                            elevation: 0,
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 14,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius
+                                                  .circular(30),
+                                            ),
+                                          ),
+                                          child: authProvider.isLoading
+                                              ? const SizedBox(
+                                            height: 24,
+                                            width: 24,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2.5,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                              : const Row(
+                                            mainAxisAlignment: MainAxisAlignment
+                                                .center,
+                                            children: [
+                                              Icon(Icons.login, size: 20),
+                                              SizedBox(width: 10),
+                                              Text(
+                                                'Sign In',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       );
                                     },
-                                    child: const Text(
-                                      "Don't have an account? Sign up",
-                                      style: TextStyle(color: Colors.white70),
-                                    ),
                                   ),
                                 ),
                               ],
@@ -222,58 +420,68 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
-                  ),
+
+                    const SizedBox(height: 28),
+
+                    // ==================== رابط إنشاء حساب جديد ====================
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Don't have an account? ",
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 13,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const RegisterScreen(),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            'Sign Up',
+                            style: TextStyle(
+                              color: Color(0xFF6C63FF),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 20),
+                  ],
                 ),
               ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRoleButton(UserType type, String label, bool isSelected) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedUserType = type;
-          });
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? Colors.deepPurple
-                : Colors.white.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected
-                  ? Colors.deepPurple
-                  : Colors.white.withOpacity(0.3),
             ),
           ),
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.white : Colors.white70,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-          ),
-        ),
+        ],
       ),
     );
   }
 
   void _login(AuthProvider authProvider) async {
     if (_formKey.currentState!.validate()) {
-      bool success = await authProvider.login(
-        _emailController.text.trim(),
-        _passwordController.text.trim(),
-        _selectedUserType,
-      );
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
+
+      UserType userType;
+
+      if (email == 'trainer@test.com') {
+        userType = UserType.trainer;
+      } else if (email == 'admin@test.com') {
+        userType = UserType.admin;
+      } else {
+        userType = UserType.trainee;
+      }
+
+      bool success = await authProvider.login(email, password, userType);
 
       if (success && mounted) {
         Widget nextScreen;
@@ -291,7 +499,10 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login failed. Please check your credentials.')),
+          const SnackBar(
+            content: Text('Invalid email or password. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }

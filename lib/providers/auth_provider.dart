@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -11,6 +12,28 @@ class AuthProvider extends ChangeNotifier {
   bool get isTrainer => _currentUser?.userType == UserType.trainer;
   bool get isTrainee => _currentUser?.userType == UserType.trainee;
 
+  // دالة لتحميل المستخدم المحفوظ عند بدء التطبيق
+  Future<void> loadUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedUser = prefs.getString('currentUser');
+
+    if (savedUser != null) {
+      final userData = savedUser.split('|');
+      _currentUser = UserModel(
+        id: userData[0],
+        name: userData[1],
+        email: userData[2],
+        userType: userData[3] == 'admin'
+            ? UserType.admin
+            : userData[3] == 'trainer'
+            ? UserType.trainer
+            : UserType.trainee,
+      );
+      notifyListeners();
+    }
+  }
+
+  // دالة تسجيل الدخول
   Future<bool> login(String email, String password, UserType selectedType) async {
     _isLoading = true;
     notifyListeners();
@@ -19,7 +42,7 @@ class AuthProvider extends ChangeNotifier {
 
     if (email.isNotEmpty && password.isNotEmpty) {
       _currentUser = UserModel(
-        id: '1',
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
         name: selectedType == UserType.admin
             ? 'Admin User'
             : selectedType == UserType.trainer
@@ -28,6 +51,11 @@ class AuthProvider extends ChangeNotifier {
         email: email,
         userType: selectedType,
       );
+
+      final prefs = await SharedPreferences.getInstance();
+      final userString = '${_currentUser!.id}|${_currentUser!.name}|${_currentUser!.email}|${_currentUser!.userType.toString().split('.').last}';
+      await prefs.setString('currentUser', userString);
+
       _isLoading = false;
       notifyListeners();
       return true;
@@ -38,13 +66,7 @@ class AuthProvider extends ChangeNotifier {
     return false;
   }
 
-  void logout() {
-    _currentUser = null;
-    notifyListeners();
-  }
-
-  // أضيفي هذه الدالة داخل class AuthProvider
-
+  // ✅ دالة تسجيل مستخدم جديد (أضيفي هذه)
   Future<bool> register(String name, String email, String password, UserType userType) async {
     _isLoading = true;
     notifyListeners();
@@ -58,6 +80,11 @@ class AuthProvider extends ChangeNotifier {
         email: email,
         userType: userType,
       );
+
+      final prefs = await SharedPreferences.getInstance();
+      final userString = '${_currentUser!.id}|${_currentUser!.name}|${_currentUser!.email}|${_currentUser!.userType.toString().split('.').last}';
+      await prefs.setString('currentUser', userString);
+
       _isLoading = false;
       notifyListeners();
       return true;
@@ -66,5 +93,13 @@ class AuthProvider extends ChangeNotifier {
     _isLoading = false;
     notifyListeners();
     return false;
+  }
+
+  // دالة تسجيل الخروج
+  Future<void> logout() async {
+    _currentUser = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('currentUser');
+    notifyListeners();
   }
 }

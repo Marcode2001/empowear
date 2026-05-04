@@ -1,4 +1,4 @@
-package com.empowear.empowear
+package com.example.empower
 
 import io.flutter.embedding.android.FlutterActivity
 
