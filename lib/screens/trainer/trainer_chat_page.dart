@@ -663,7 +663,7 @@ class _TrainerChatDetailPageState extends State<TrainerChatDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    // final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -731,7 +731,7 @@ class _TrainerChatDetailPageState extends State<TrainerChatDetailPage> {
             child: AnimatedPadding(
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeOut,
-              padding: EdgeInsets.only(bottom: keyboardHeight),
+              padding: EdgeInsets.only(bottom: 0),
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _messages.isEmpty
