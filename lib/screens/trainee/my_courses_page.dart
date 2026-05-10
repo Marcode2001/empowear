@@ -1,7 +1,6 @@
 // 📄 lib/screens/trainee/my_courses_page.dart
 // ============================================================
 // 📚 صفحة عرض الكورسات المسجلة للطالب (My Courses Page)
-// ✅ النسخة المعدلة - تجلب الجلسات والمحتوى من الـ API ديناميكياً
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -12,6 +11,7 @@ import '../../bloc/course/course_event.dart';
 import '../../bloc/course/course_state.dart';
 import '../../models/course_models.dart';
 import '../../repositories/course_repository.dart';
+import 'content_viewer_page.dart';
 
 // ============================================================
 // صفحة My Courses (تعرض الكورسات المسجلة فقط)
@@ -32,15 +32,14 @@ class MyCoursesPage extends StatefulWidget {
 }
 
 class _MyCoursesPageState extends State<MyCoursesPage> {
+  // متغيرات البحث
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   List<CourseItem> courses = [];
   String _selectedCategoryId = '';
 
-  // ✅ Cache للجلسات (المفتاح: courseId)
+  // ✅ Cache للجلسات مع المحتوى (لتجنب جلب البيانات عدة مرات)
   final Map<String, List<Session>> _cachedSessions = {};
-  // ✅ Cache للمحتوى (المفتاح: '${courseId}_${sessionId}')
-  final Map<String, List<CourseContent>> _cachedContents = {};
 
   @override
   void initState() {
@@ -48,6 +47,7 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
     _loadCourses();
   }
 
+  // تحميل الكورسات من الـ widget
   void _loadCourses() {
     if (widget.courses != null && widget.courses!.isNotEmpty) {
       setState(() {
@@ -59,6 +59,7 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
     }
   }
 
+  // فلترة الكورسات حسب البحث
   List<CourseItem> get _filteredCourses {
     if (_searchQuery.isEmpty) return courses;
     return courses.where((course) {
@@ -67,25 +68,28 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
     }).toList();
   }
 
+  // عدد النتائج
   int get _totalResultsCount => _filteredCourses.length;
 
-  // ✅ جلب الجلسات من الـ API
-  Future<List<Session>> _fetchSessions(String courseId) async {
+  // ✅ الدالة الرئيسية: جلب الجلسات مع المحتوى من API
+  Future<List<Session>> _fetchSessionsWithContent(String courseId) async {
     try {
-      return await CourseRepository().getCourseSessions(courseId);
-    } catch (e) {
-      print('❌ Error fetching sessions: $e');
-      return [];
-    }
-  }
+      print('📚 [MyCourses] جلب الجلسات مع المحتوى للكورس: $courseId');
+      // نستخدم الدالة الجديدة التي تجلب الجلسات والمحتوى معاً
+      final sessions = await CourseRepository().getCourseSessionsWithContent(courseId);
+      print('✅ [MyCourses] تم جلب ${sessions.length} جلسة');
 
-  // ✅ جلب المحتوى الخاص بجلسة معينة
-  Future<List<CourseContent>> _fetchContentForSession(String courseId, int sessionId) async {
-    try {
-      final allContent = await CourseRepository().getCourseContent(courseId);
-      return allContent.where((c) => c.courseSession == sessionId).toList();
+      // طباعة تفاصيل الجلسات والمحتوى للتصحيح
+      for (var session in sessions) {
+        print('   📗 الجلسة ${session.sessionOrder}: ${session.title} - ${session.contents.length} دروس');
+        for (var content in session.contents) {
+          print('      📄 ${content.title} (${content.contentType}) - الرابط: ${content.fileUrl}');
+        }
+      }
+
+      return sessions;
     } catch (e) {
-      print('❌ Error fetching content: $e');
+      print('❌ [MyCourses] خطأ: $e');
       return [];
     }
   }
@@ -135,6 +139,7 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
       )
           : Column(
         children: [
+          // حقل البحث
           Padding(
             padding: const EdgeInsets.all(16),
             child: Container(
@@ -189,6 +194,9 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
     );
   }
 
+  // ============================================================
+  // 🃏 بناء بطاقة الكورس
+  // ============================================================
   Widget _buildCourseCard(CourseItem course) {
     return GestureDetector(
       onTap: () => Navigator.push(
@@ -197,9 +205,7 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
           builder: (context) => CurriculumPage(
             course: course,
             cachedSessions: _cachedSessions,
-            cachedContents: _cachedContents,
-            fetchSessions: _fetchSessions,
-            fetchContentForSession: _fetchContentForSession,
+            fetchSessionsWithContent: _fetchSessionsWithContent,
           ),
         ),
       ),
@@ -245,13 +251,15 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
                     children: [
                       const Icon(Icons.access_time, size: 12, color: Colors.white),
                       const SizedBox(width: 4),
-                      Text(course.totalHours, style: const TextStyle(fontSize: 11, color: Colors.white)),
+                      Text(course.totalHours != '0h' ? course.totalHours : 'N/A',
+                          style: const TextStyle(fontSize: 11, color: Colors.white)),
                     ],
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
+            // شريط التقدم
             Row(
               children: [
                 Expanded(
@@ -284,23 +292,19 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
 }
 
 // ============================================================
-// 📖 صفحة المنهاج (Curriculum Page) - مع جلب ديناميكي
+// 📖 صفحة المنهاج (Curriculum Page)
 // ============================================================
 
 class CurriculumPage extends StatefulWidget {
   final CourseItem course;
   final Map<String, List<Session>> cachedSessions;
-  final Map<String, List<CourseContent>> cachedContents;
-  final Future<List<Session>> Function(String) fetchSessions;
-  final Future<List<CourseContent>> Function(String, int) fetchContentForSession;
+  final Future<List<Session>> Function(String) fetchSessionsWithContent;
 
   const CurriculumPage({
     super.key,
     required this.course,
     required this.cachedSessions,
-    required this.cachedContents,
-    required this.fetchSessions,
-    required this.fetchContentForSession,
+    required this.fetchSessionsWithContent,
   });
 
   @override
@@ -317,22 +321,27 @@ class _CurriculumPageState extends State<CurriculumPage> {
     _loadSessions();
   }
 
+  // تحميل الجلسات (من cache أو من API)
   Future<void> _loadSessions() async {
     setState(() => _isLoadingSessions = true);
     try {
       List<Session> sessions;
+      // نتحقق من cache أولاً
       if (widget.cachedSessions.containsKey(widget.course.id)) {
         sessions = widget.cachedSessions[widget.course.id]!;
+        print('✅ [Curriculum] استخدام الجلسات من cache');
       } else {
-        sessions = await widget.fetchSessions(widget.course.id);
+        // نجلب من API
+        sessions = await widget.fetchSessionsWithContent(widget.course.id);
         widget.cachedSessions[widget.course.id] = sessions;
+        print('✅ [Curriculum] تم جلب ${sessions.length} جلسة من API');
       }
       setState(() {
         _sessions = sessions;
         _isLoadingSessions = false;
       });
     } catch (e) {
-      print('❌ Error loading sessions: $e');
+      print('❌ [Curriculum] خطأ: $e');
       setState(() => _isLoadingSessions = false);
     }
   }
@@ -355,78 +364,10 @@ class _CurriculumPageState extends State<CurriculumPage> {
       ),
       body: Column(
         children: [
-          // 🎓 رأس الكورس (Course Header)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Colors.deepPurple, Colors.purple]),
-              borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(30), bottomRight: Radius.circular(30)),
-            ),
-            child: Column(
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Icon(Icons.menu_book, color: Colors.white, size: 40),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  widget.course.title,
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Trainer: ${widget.course.trainerName}',
-                  style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.9)),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.access_time, size: 14, color: Colors.white),
-                          const SizedBox(width: 4),
-                          Text(widget.course.totalHours, style: const TextStyle(color: Colors.white, fontSize: 12)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.trending_up, size: 14, color: Colors.white),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${widget.course.progress}%',
-                            style: const TextStyle(color: Colors.white, fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+          // رأس الكورس
+          _buildCourseHeader(),
           const SizedBox(height: 16),
+          // عنوان المنهاج
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: Row(
@@ -438,30 +379,16 @@ class _CurriculumPageState extends State<CurriculumPage> {
             ),
           ),
           const SizedBox(height: 12),
+          // قائمة الجلسات
           Expanded(
             child: _isLoadingSessions
                 ? const Center(child: CircularProgressIndicator())
                 : _sessions.isEmpty
-                ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.video_library_outlined, size: 64, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No sessions available for this course yet',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 16),
-                  ),
-                ],
-              ),
-            )
+                ? _buildEmptyState()
                 : ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: _sessions.length,
-              itemBuilder: (context, index) {
-                final session = _sessions[index];
-                return _buildSessionCard(session);
-              },
+              itemBuilder: (context, index) => _buildSessionCard(_sessions[index]),
             ),
           ),
         ],
@@ -469,6 +396,89 @@ class _CurriculumPageState extends State<CurriculumPage> {
     );
   }
 
+  // رأس الكورس (Header)
+  Widget _buildCourseHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [Colors.deepPurple, Colors.purple]),
+        borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(30), bottomRight: Radius.circular(30)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Icon(Icons.menu_book, color: Colors.white, size: 40),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            widget.course.title,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Trainer: ${widget.course.trainerName}',
+            style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.9)),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildInfoChip(Icons.access_time, widget.course.totalHours != '0h' ? widget.course.totalHours : 'N/A'),
+              const SizedBox(width: 12),
+              _buildInfoChip(Icons.trending_up, '${widget.course.progress}%'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // شريط معلومات صغير
+  Widget _buildInfoChip(IconData icon, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: Colors.white),
+          const SizedBox(width: 4),
+          Text(text, style: const TextStyle(color: Colors.white, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  // حالة عدم وجود جلسات
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.video_library_outlined, size: 64, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text(
+            'No sessions available for this course yet',
+            style: TextStyle(color: Colors.grey[600], fontSize: 16),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // 🎴 بطاقة الجلسة
+  // ============================================================
   Widget _buildSessionCard(Session session) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -503,48 +513,28 @@ class _CurriculumPageState extends State<CurriculumPage> {
             ),
           ],
         ),
-        children: [
-          // ✅ جلب المحتوى ديناميكياً لكل جلسة
-          FutureBuilder<List<CourseContent>>(
-            future: widget.cachedContents.containsKey('${widget.course.id}_${session.id}')
-                ? Future.value(widget.cachedContents['${widget.course.id}_${session.id}'])
-                : widget.fetchContentForSession(widget.course.id, session.id),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-              if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-                return Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    'No content available for this session',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-                  ),
-                );
-              }
-              final contents = snapshot.data!;
-              if (!widget.cachedContents.containsKey('${widget.course.id}_${session.id}')) {
-                widget.cachedContents['${widget.course.id}_${session.id}'] = contents;
-              }
-              return Column(
-                children: [
-                  ...contents.map((content) => _buildLessonCard(content)),
-                  const SizedBox(height: 8),
-                ],
-              );
-            },
-          ),
-        ],
+        // ✅ المحتوى موجود مباشرة في session.contents
+        children: session.contents.isEmpty
+            ? [
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text('No content available for this session'),
+          )
+        ]
+            : session.contents.map((content) => _buildLessonCard(content)).toList(),
       ),
     );
   }
 
+  // ============================================================
+  // 📄 بطاقة الدرس
+  // ============================================================
   Widget _buildLessonCard(CourseContent content) {
     final isVideo = content.contentType.toLowerCase() == 'video';
     final isPdf = content.contentType.toLowerCase() == 'pdf';
+
+    // للتصحيح: نطبع رابط الملف
+    print('📄 [LessonCard] ${content.title} - الرابط: ${content.fileUrl}');
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -556,6 +546,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
       ),
       child: Row(
         children: [
+          // أيقونة الدرس
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -573,6 +564,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
             ),
           ),
           const SizedBox(width: 12),
+          // معلومات الدرس
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -601,7 +593,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Order: ${content.contentOrder}',
+                      'Part ${content.contentOrder}',
                       style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                     ),
                   ],
@@ -609,18 +601,16 @@ class _CurriculumPageState extends State<CurriculumPage> {
               ],
             ),
           ),
+          // زر فتح الملف
           GestureDetector(
             onTap: () {
-              if (content.fileUrl != null && content.fileUrl!.isNotEmpty) {
-                // TODO: فتح الرابط باستخدام url_launcher
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Opening: ${content.title}')),
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('No file available')),
-                );
-              }
+              // ننتقل إلى صفحة عرض المحتوى
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ContentViewerPage(content: content),
+                ),
+              );
             },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

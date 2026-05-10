@@ -75,8 +75,9 @@ class CourseBloc extends Bloc<CourseEvent, CourseState> {
           message: 'Course registered successfully',
           registeredCourse: event.course,
         ));
-        // ✅ أعد تحميل الكورسات المسجلة لتحديث الواجهة
+        // ✅ إعادة تحميل الكورسات المسجلة فقط (لا تحذف أي شيء)
         add(LoadRegisteredCoursesEvent(userId: event.userId));
+        add(LoadAvailableCoursesEvent(userId: event.userId));
       } else {
         emit(CourseError(message: 'Failed to register course'));
       }

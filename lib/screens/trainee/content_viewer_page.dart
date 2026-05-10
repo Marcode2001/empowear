@@ -2,24 +2,36 @@
 // ============================================================
 // 🖼️ صفحة عرض المحتوى (PDF, صور, فيديو)
 // ============================================================
+// هذه الصفحة تعرض الملف (PDF، فيديو، صورة) عند الضغط على الدرس
 
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';  // ✅ تأكد من وجود هذا الاستيراد
+import 'package:url_launcher/url_launcher.dart';
 import '../../models/course_models.dart';
 
 class ContentViewerPage extends StatelessWidget {
+  // الكائن الذي نريد عرضه (يحتوي على رابط الملف)
   final CourseContent content;
 
   const ContentViewerPage({super.key, required this.content});
 
   @override
   Widget build(BuildContext context) {
+    // 🔍 للتصحيح: نطبع رابط الملف في الكونسول لنرى القيمة الحقيقية
+    print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    print('📁 [ContentViewerPage] عنوان الملف الخام: ${content.fileUrl}');
+    print('📁 [ContentViewerPage] الرابط الكامل: ${content.fullUrl}');
+    print('📁 [ContentViewerPage] نوع الملف: ${content.contentType}');
+    print('📁 [ContentViewerPage] هل يوجد ملف: ${content.hasFile}');
+    print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
     return Scaffold(
+      // شريط العنوان العلوي
       appBar: AppBar(
         title: Text(content.title),
         backgroundColor: Colors.deepPurple,
         centerTitle: true,
       ),
+      // محتوى الصفحة
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -27,7 +39,7 @@ class ContentViewerPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // أيقونة كبيرة حسب نوع المحتوى
+              // 🎨 أيقونة كبيرة حسب نوع المحتوى
               Icon(
                 content.icon,
                 size: 80,
@@ -35,7 +47,7 @@ class ContentViewerPage extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // عنوان المحتوى
+              // 📝 عنوان المحتوى
               Text(
                 content.title,
                 style: const TextStyle(
@@ -46,7 +58,7 @@ class ContentViewerPage extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // نوع المحتوى
+              // 🏷️ نوع المحتوى (PDF, VIDEO, IMAGE)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
@@ -64,33 +76,32 @@ class ContentViewerPage extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // رابط الملف (للنسخ)
-              if (content.hasFile)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      const Text(
-                        'رابط الملف:',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                      const SizedBox(height: 4),
-                      SelectableText(
-                        content.fileUrl!,
-                        style: const TextStyle(fontSize: 11, color: Colors.blue),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
+              // 🔗 عرض رابط الملف (للنسخ أو التصحيح)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(12),
                 ),
+                child: Column(
+                  children: [
+                    const Text(
+                      'رابط الملف:',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 4),
+                    SelectableText(
+                      content.fileUrl ?? 'لا يوجد رابط',
+                      style: const TextStyle(fontSize: 11, color: Colors.blue),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
 
               const SizedBox(height: 32),
 
-              // زر فتح الملف
+              // 🚀 زر فتح الملف (يظهر فقط إذا كان هناك ملف)
               if (content.hasFile)
                 ElevatedButton.icon(
                   onPressed: () => _openFile(context),
@@ -109,7 +120,7 @@ class ContentViewerPage extends StatelessWidget {
                   ),
                 ),
 
-              // رسالة إذا لم يوجد ملف
+              // ⚠️ رسالة إذا لم يوجد ملف
               if (!content.hasFile)
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -137,8 +148,11 @@ class ContentViewerPage extends StatelessWidget {
     );
   }
 
-  // ✅ دالة فتح الملف
+  // ============================================================
+  // 🚀 دالة فتح الملف (تستخدم url_launcher)
+  // ============================================================
   Future<void> _openFile(BuildContext context) async {
+    // التأكد من وجود ملف
     if (!content.hasFile) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -149,32 +163,50 @@ class ContentViewerPage extends StatelessWidget {
       return;
     }
 
-    String url = content.fileUrl!;
+    // ✅ استخدام الرابط الكامل من النموذج
+    final String url = content.fullUrl;
 
-    // ⚠️ غير هذا الرابط حسب عنوان جهازك
-    const String baseUrl = 'http://192.168.1.22:8000';
-
-    final String fullUrl = url.startsWith('http')
-        ? url
-        : '$baseUrl$url';
+    print('🚀 [ContentViewerPage] محاولة فتح الرابط: $url');
 
     try {
-      final uri = Uri.parse(fullUrl);
+      // تحويل الرابط إلى Uri
+      final uri = Uri.parse(url);
 
-      // ✅ استخدام canLaunchUrl و launchUrl (موجودين في url_launcher)
+      // التحقق من إمكانية فتح الرابط
       if (await canLaunchUrl(uri)) {
+        // فتح الرابط في المتصفح أو التطبيق المناسب
         await launchUrl(
           uri,
           mode: LaunchMode.externalApplication,
         );
+        print('✅ [ContentViewerPage] تم فتح الرابط بنجاح');
       } else {
-        throw 'لا يمكن فتح الرابط';
+        throw 'لا يمكن فتح الرابط $url';
       }
     } catch (e) {
+      print('❌ [ContentViewerPage] فشل فتح الملف: $e');
+
+      // عرض رسالة خطأ للمستخدم
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('فشل فتح الملف: $e'),
+          content: Text('فشل فتح الملف: ${e.toString()}'),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+
+      // عرض رابط الملف في رسالة منفصلة للتصحيح
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('رابط الملف'),
+          content: SelectableText(url),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('إغلاق'),
+            ),
+          ],
         ),
       );
     }
