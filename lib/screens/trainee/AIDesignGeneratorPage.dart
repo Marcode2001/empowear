@@ -1,8 +1,17 @@
+// 📄 lib/screens/trainee/ai_design_generator_page.dart
+// ============================================================
+// 🎨 صفحة توليد تصاميم الأزياء بالذكاء الاصطناعي
+// ============================================================
+// الوظيفة: تحويل الرسمات إلى تصاميم 3D
+// - إدخال الفصل (مطلوب)
+// - إدخال وصف (اختياري)
+// - رفع صورة (اختياري)
+// - توليد نتيجة (نصية أو 3D)
+
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 
-// ==================== صفحة AI Design Generator ====================
 class AIDesignGeneratorPage extends StatefulWidget {
   const AIDesignGeneratorPage({super.key});
 
@@ -11,18 +20,19 @@ class AIDesignGeneratorPage extends StatefulWidget {
 }
 
 class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
+  // ✅ متغيرات الحالة
   File? _selectedImage;
   bool _isLoading = false;
   String? _generatedResult;
   bool _is3DResult = false;
 
-  // متغيرات النص
+  // ✅ متغيرات النص
   final TextEditingController _seasonController = TextEditingController();
   final TextEditingController _promptController = TextEditingController();
   String _enteredSeason = '';
   String _seasonError = '';
 
-  // قائمة الفصول المسموحة (بصيغة موحدة)
+  // ✅ قائمة الفصول المسموحة
   final List<String> _validSeasons = ['spring', 'summer', 'autumn', 'winter'];
   final Map<String, String> _seasonDisplayNames = {
     'spring': 'Spring',
@@ -38,23 +48,19 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
     super.dispose();
   }
 
-  //  لتحقق من صحة الفصل وتوحيد الصيغة
+  // ✅ التحقق من صحة الفصل
   String? _validateAndNormalizeSeason(String input) {
     if (input.isEmpty) return null;
-
     final trimmed = input.trim().toLowerCase();
-
-    // التحقق من تطابق الفصل بالكامل
     for (var validSeason in _validSeasons) {
       if (trimmed == validSeason) {
         return _seasonDisplayNames[validSeason];
       }
     }
-
-    return null; // فصل غير صحيح
+    return null;
   }
 
-  //  لمعالجة تغيير النص في حقل الفصل
+  // ✅ معالجة تغيير الفصل
   void _onSeasonChanged(String value) {
     setState(() {
       if (value.isEmpty) {
@@ -63,7 +69,6 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
         final normalized = _validateAndNormalizeSeason(value);
         if (normalized != null) {
           _seasonError = '';
-          // تحديث النص في الحقل بالصيغة الصحيحة
           if (_seasonController.text != normalized) {
             _seasonController.value = TextEditingValue(
               text: normalized,
@@ -77,6 +82,7 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
     });
   }
 
+  // ✅ اختيار صورة من المعرض
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
@@ -89,6 +95,7 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
     }
   }
 
+  // ✅ التقاط صورة من الكاميرا
   Future<void> _takePhoto() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
@@ -101,25 +108,21 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
     }
   }
 
+  // ✅ توليد النتيجة
   Future<void> _generateOutput() async {
-    // التحقق من إدخال الفصل
+    // التحقق من الفصل
     final seasonInput = _seasonController.text.trim();
     if (seasonInput.isEmpty) {
-      setState(() {
-        _seasonError = 'Please enter a season';
-      });
+      setState(() => _seasonError = 'Please enter a season');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a season!'), backgroundColor: Colors.orange),
       );
       return;
     }
 
-    // التحقق من صحة الفصل
     final normalizedSeason = _validateAndNormalizeSeason(seasonInput);
     if (normalizedSeason == null) {
-      setState(() {
-        _seasonError = 'Please enter a valid season: Spring, Summer, Autumn, or Winter';
-      });
+      setState(() => _seasonError = 'Please enter a valid season');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a valid season!'), backgroundColor: Colors.orange),
       );
@@ -129,7 +132,6 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
     final hasImage = _selectedImage != null;
     final hasText = _promptController.text.trim().isNotEmpty;
 
-    // التحقق من وجود إدخال (نص أو صورة)
     if (!hasText && !hasImage) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a description or upload an image!'), backgroundColor: Colors.orange),
@@ -143,7 +145,8 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
       _enteredSeason = normalizedSeason;
     });
 
-    await Future.delayed(const Duration(seconds: 1));
+    // محاكاة وقت المعالجة
+    await Future.delayed(const Duration(seconds: 2));
 
     String result;
     bool is3D = hasImage;
@@ -168,6 +171,7 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
     );
   }
 
+  // ✅ توليد نتيجة 3D
   String _generate3DResult() {
     final season = _enteredSeason;
     final prompt = _promptController.text.trim();
@@ -175,10 +179,11 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
 
     return '✅ 3D model generated successfully for $season season!$promptText\n\n'
         '🎨 Suggested colors: ${_getSeasonColors(season)}\n'
-        '✨ Trending color : \n'
+        '✨ Trending color palettes available\n'
         '🖼️ Image: ${_selectedImage != null ? "Uploaded" : "None"}';
   }
 
+  // ✅ توليد نتيجة نصية
   String _generateTextResult() {
     final season = _enteredSeason;
     final prompt = _promptController.text.trim();
@@ -186,15 +191,16 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
     if (prompt.isEmpty) {
       return '📝 Please enter a description to generate text!\n\n'
           '🌸 Season: $season\n'
-          '✨ Trending color : ${_getSeasonColors(season)} \n'
-          '💡 Try describing what you want to create.';
+          '✨ Trending colors: ${_getSeasonColors(season)}\n'
+          '💡 Tip: Try describing what you want to create.';
     }
 
-    return '📝 Colors generated for $season season!\n\n'
+    return '📝 Design generated for $season season!\n\n'
         '🎨 ${_getSeasonEnhancements(season)}\n'
         '💡 Tip: Add an image to generate a 3D model!';
   }
 
+  // ✅ الحصول على ألوان الموسم
   String _getSeasonColors(String season) {
     final s = season.toLowerCase();
     if (s.contains('spring')) return 'Pink, Green, Yellow, Lavender';
@@ -204,6 +210,7 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
     return 'Purple, Gold, Silver';
   }
 
+  // ✅ الحصول على تحسينات الموسم
   String _getSeasonEnhancements(String season) {
     final s = season.toLowerCase();
     if (s.contains('spring')) return 'Fresh flowers, Pastel colors, Soft lighting';
@@ -211,6 +218,32 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
     if (s.contains('autumn') || s.contains('fall')) return 'Warm tones, Cozy atmosphere, Golden lighting';
     if (s.contains('winter')) return 'Cool colors, Snow effects, Frosty lighting';
     return 'Add seasonal elements for better results';
+  }
+
+  // ✅ زر رفع الصورة
+  Widget _buildImageButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+    required Color color,
+  }) {
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16),
+          const SizedBox(width: 6),
+          Text(label, style: const TextStyle(fontSize: 12)),
+        ],
+      ),
+    );
   }
 
   @override
@@ -286,7 +319,7 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
 
                   const SizedBox(height: 20),
 
-                  // ==================== حقل الفصل (محسن) ====================
+                  // ==================== حقل الفصل ====================
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -322,9 +355,7 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
                             errorText: _seasonError.isNotEmpty ? _seasonError : null,
                             errorStyle: const TextStyle(fontSize: 11),
                           ),
-
                         ),
-                        // عرض الفصول المسموحة
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Wrap(
@@ -361,7 +392,7 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
 
                   const SizedBox(height: 16),
 
-                  // حقل الوصف
+                  // ==================== حقل الوصف ====================
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -401,7 +432,7 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
 
                   const SizedBox(height: 16),
 
-                  // رفع الصورة
+                  // ==================== رفع الصورة ====================
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -444,9 +475,19 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  _buildImageButton(icon: Icons.photo_library, label: 'Gallery', onPressed: _pickImage, color: Colors.deepPurple),
+                                  _buildImageButton(
+                                    icon: Icons.photo_library,
+                                    label: 'Gallery',
+                                    onPressed: _pickImage,
+                                    color: Colors.deepPurple,
+                                  ),
                                   const SizedBox(width: 12),
-                                  _buildImageButton(icon: Icons.camera_alt, label: 'Camera', onPressed: _takePhoto, color: Colors.purple),
+                                  _buildImageButton(
+                                    icon: Icons.camera_alt,
+                                    label: 'Camera',
+                                    onPressed: _takePhoto,
+                                    color: Colors.purple,
+                                  ),
                                 ],
                               ),
                             ],
@@ -485,12 +526,11 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
 
                   const SizedBox(height: 20),
 
-                  // زر التوليد
+                  // ==================== زر التوليد ====================
                   Container(
                     width: double.infinity,
                     height: 52,
                     decoration: BoxDecoration(
-                      // 🎨 التدرج من deepPurple إلى purple
                       gradient: const LinearGradient(
                         colors: [Colors.deepPurple, Colors.purple],
                         begin: Alignment.topLeft,
@@ -508,15 +548,22 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _generateOutput,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent, // خلفية شفافة
+                        backgroundColor: Colors.transparent,
                         foregroundColor: Colors.white,
-                        elevation: 0, // إزالة الظل الافتراضي لأننا أضفناه في Container
+                        elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(25),
                         ),
                       ),
                       child: _isLoading
-                          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
                           : const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -530,7 +577,7 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
 
                   const SizedBox(height: 20),
 
-                  // عرض النتيجة
+                  // ==================== عرض النتيجة ====================
                   if (_generatedResult != null)
                     Container(
                       width: double.infinity,
@@ -573,31 +620,6 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildImageButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onPressed,
-    required Color color,
-  }) {
-    return ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16),
-          const SizedBox(width: 6),
-          Text(label, style: const TextStyle(fontSize: 12)),
-        ],
       ),
     );
   }

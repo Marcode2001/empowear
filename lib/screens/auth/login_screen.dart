@@ -1,13 +1,13 @@
+// 📄 lib/screens/auth/login_screen.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../bloc/auth/auth_bloc.dart';
 import '../../models/user_model.dart';
-import '../../providers/auth_provider.dart';
 import '../admin/admin_home_screen.dart';
 import '../trainer/trainer_home_screen.dart';
 import '../trainee/trainee_home_screen.dart';
 import 'register_screen.dart';
-
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -84,13 +84,10 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // ✅ منع إعادة ترتيب المحتوى عند ظهور الكيبورد
       resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
-
-          // ==================== صورة PNG ثابتة (لن تتحرك) ====================
-          // ✅ استخدام Positioned.fill لتثبيت الصورة في الخلفية
+          // ==================== صورة PNG ثابتة ====================
           Positioned.fill(
             top: 200,
             right: -150,
@@ -108,14 +105,12 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
 
-
           // ==================== المحتوى الرئيسي ====================
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 32, vertical: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -138,8 +133,7 @@ class _LoginScreenState extends State<LoginScreen>
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF6C63FF).withOpacity(
-                                      0.3),
+                                  color: const Color(0xFF6C63FF).withOpacity(0.3),
                                   blurRadius: 20,
                                   spreadRadius: 5,
                                   offset: const Offset(0, 8),
@@ -159,22 +153,21 @@ class _LoginScreenState extends State<LoginScreen>
                     ),
                     const SizedBox(height: 24),
 
-                    // ==================== عنوان التطبيق مع تأثيرات ====================
+                    // ==================== عنوان التطبيق ====================
                     FadeTransition(
                       opacity: _fadeAnimation,
                       child: SlideTransition(
                         position: _slideAnimation,
                         child: ShaderMask(
-                          shaderCallback: (bounds) =>
-                              const LinearGradient(
-                                colors: [
-                                  Color(0xFF6C63FF),
-                                  Color(0xFF9C27B0),
-                                  Color(0xFFE040FB)
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ).createShader(bounds),
+                          shaderCallback: (bounds) => const LinearGradient(
+                            colors: [
+                              Color(0xFF6C63FF),
+                              Color(0xFF9C27B0),
+                              Color(0xFFE040FB)
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ).createShader(bounds),
                           child: Text(
                             'EMPOWEAR',
                             style: TextStyle(
@@ -184,14 +177,12 @@ class _LoginScreenState extends State<LoginScreen>
                               letterSpacing: 6,
                               shadows: [
                                 Shadow(
-                                  color: const Color(0xFF6C63FF).withOpacity(
-                                      0.5),
+                                  color: const Color(0xFF6C63FF).withOpacity(0.5),
                                   blurRadius: 10,
                                   offset: const Offset(0, 2),
                                 ),
                                 Shadow(
-                                  color: const Color(0xFF9C27B0).withOpacity(
-                                      0.3),
+                                  color: const Color(0xFF9C27B0).withOpacity(0.3),
                                   blurRadius: 20,
                                   offset: const Offset(0, 4),
                                 ),
@@ -214,7 +205,6 @@ class _LoginScreenState extends State<LoginScreen>
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.0),
                             borderRadius: BorderRadius.circular(32),
-
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.grey.withOpacity(0.1),
@@ -243,8 +233,7 @@ class _LoginScreenState extends State<LoginScreen>
                                       color: const Color(0xFF6C63FF),
                                     ),
                                     filled: true,
-                                    fillColor: Colors.grey.shade50.withOpacity(
-                                        0.02),
+                                    fillColor: Colors.grey.shade50.withOpacity(0.02),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(16),
                                       borderSide: BorderSide.none,
@@ -306,8 +295,7 @@ class _LoginScreenState extends State<LoginScreen>
                                       },
                                     ),
                                     filled: true,
-                                    fillColor: Colors.grey.shade50.withOpacity(
-                                        0.02),
+                                    fillColor: Colors.grey.shade50.withOpacity(0.02),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(16),
                                       borderSide: BorderSide.none,
@@ -343,48 +331,74 @@ class _LoginScreenState extends State<LoginScreen>
                                 // ==================== زر تسجيل الدخول ====================
                                 SizedBox(
                                   width: double.infinity,
-                                  child: Consumer<AuthProvider>(
-                                    builder: (context, authProvider, child) {
+                                  child: BlocConsumer<AuthBloc, AuthState>(
+                                    listener: (context, state) {
+                                      if (state is AuthAuthenticated) {
+                                        final enteredEmail = _emailController.text.trim();
+                                        print('✅ Email entered: $enteredEmail');
+                                        print('✅ User type from state: ${state.user.userType}');
+
+                                        // ✅ استخدام الإيميل لتحديد الشاشة
+                                        if (enteredEmail == 'marwa@gmail.com') {
+                                          print('✅ Going to Trainer Home Screen');
+                                          Navigator.pushReplacement(
+                                            context,
+                                            MaterialPageRoute(builder: (_) => const TrainerHomeScreen()),
+                                          );
+                                        } else if (enteredEmail == 'admin@gmail.com') {
+                                          print('✅ Going to Admin Home Screen');
+                                          Navigator.pushReplacement(
+                                            context,
+                                            MaterialPageRoute(builder: (_) => const AdminHomeScreen()),
+                                          );
+                                        } else {
+                                          print('✅ Going to Trainee Home Screen');
+                                          Navigator.pushReplacement(
+                                            context,
+                                            MaterialPageRoute(builder: (_) => const TraineeHomeScreen()),
+                                          );
+                                        }
+                                      } else if (state is AuthError) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(state.message),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    builder: (context, state) {
                                       return AnimatedContainer(
-                                        duration: const Duration(
-                                            milliseconds: 300),
+                                        duration: const Duration(milliseconds: 300),
                                         decoration: BoxDecoration(
                                           gradient: const LinearGradient(
-                                            colors: [
-                                              Color(0xFF6C63FF),
-                                              Color(0xFF9C27B0)
-                                            ],
+                                            colors: [Color(0xFF6C63FF), Color(0xFF9C27B0)],
                                             begin: Alignment.topLeft,
                                             end: Alignment.bottomRight,
                                           ),
-                                          borderRadius: BorderRadius.circular(
-                                              30),
+                                          borderRadius: BorderRadius.circular(30),
                                           boxShadow: [
                                             BoxShadow(
-                                              color: const Color(0xFF6C63FF)
-                                                  .withOpacity(0.4),
+                                              color: const Color(0xFF6C63FF).withOpacity(0.4),
                                               blurRadius: 15,
                                               spreadRadius: 5,
                                             ),
                                           ],
                                         ),
                                         child: ElevatedButton(
-                                          onPressed: authProvider.isLoading
+                                          onPressed: state is AuthLoading
                                               ? null
-                                              : () => _login(authProvider),
+                                              : () => _login(),
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: Colors.transparent,
                                             shadowColor: Colors.transparent,
                                             elevation: 0,
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 14,
-                                            ),
+                                            padding: const EdgeInsets.symmetric(vertical: 14),
                                             shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius
-                                                  .circular(30),
+                                              borderRadius: BorderRadius.circular(30),
                                             ),
                                           ),
-                                          child: authProvider.isLoading
+                                          child: state is AuthLoading
                                               ? const SizedBox(
                                             height: 24,
                                             width: 24,
@@ -394,8 +408,7 @@ class _LoginScreenState extends State<LoginScreen>
                                             ),
                                           )
                                               : const Row(
-                                            mainAxisAlignment: MainAxisAlignment
-                                                .center,
+                                            mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
                                               Icon(Icons.login, size: 20),
                                               SizedBox(width: 10),
@@ -466,45 +479,16 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  void _login(AuthProvider authProvider) async {
+  // ✅ دالة تسجيل الدخول المعدلة لاستخدام BLoC
+  void _login() {
     if (_formKey.currentState!.validate()) {
       final email = _emailController.text.trim();
       final password = _passwordController.text.trim();
 
-      UserType userType;
-
-      if (email == 'trainer@test.com') {
-        userType = UserType.trainer;
-      } else if (email == 'admin@test.com') {
-        userType = UserType.admin;
-      } else {
-        userType = UserType.trainee;
-      }
-
-      bool success = await authProvider.login(email, password, userType);
-
-      if (success && mounted) {
-        Widget nextScreen;
-        if (authProvider.isAdmin) {
-          nextScreen = const AdminHomeScreen();
-        } else if (authProvider.isTrainer) {
-          nextScreen = const TrainerHomeScreen();
-        } else {
-          nextScreen = const TraineeHomeScreen();
-        }
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => nextScreen),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invalid email or password. Please try again.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      // ✅ إرسال حدث تسجيل الدخول إلى AuthBloc
+      context.read<AuthBloc>().add(
+        LoginEvent(email: email, password: password),
+      );
     }
   }
 }

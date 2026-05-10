@@ -1,74 +1,30 @@
+// 📄 lib/screens/trainee/my_courses_page.dart
+// ============================================================
+// 📚 صفحة عرض الكورسات المسجلة للطالب (My Courses Page)
+// ✅ النسخة المعدلة - تجلب الجلسات والمحتوى من الـ API ديناميكياً
+// ============================================================
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../bloc/auth/auth_bloc.dart';
+import '../../bloc/course/course_bloc.dart';
+import '../../bloc/course/course_event.dart';
+import '../../bloc/course/course_state.dart';
 import '../../models/course_models.dart';
-
-// ============================================================
-// نماذج البيانات (Models)
-// ============================================================
-
-/// نموذج الدرس (Lesson)
-class LessonModel {
-  final String title;
-  final String duration;
-  final bool isCompleted;
-  final String videoUrl;
-  final String type;
-
-  LessonModel({
-    required this.title,
-    required this.duration,
-    this.isCompleted = false,
-    this.videoUrl = '',
-    this.type = 'video',
-  });
-}
-
-/// نموذج الكورس (Course)
-class CourseModel {
-  final String id;
-  final String name;
-  final String trainer;
-  final int progress;
-  final String hours;
-  final List<LessonModel> curriculum;
-
-  CourseModel({
-    required this.id,
-    required this.name,
-    required this.trainer,
-    required this.progress,
-    required this.hours,
-    required this.curriculum,
-  });
-}
-
-/// نموذج الجلسة (Session)
-class SessionModel {
-  final String id;
-  final String title;
-  final String description;
-  final String icon;
-  final Color color;
-  final List<CourseModel> courses;
-
-  SessionModel({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.icon,
-    required this.color,
-    required this.courses,
-  });
-}
+import '../../repositories/course_repository.dart';
 
 // ============================================================
 // صفحة My Courses (تعرض الكورسات المسجلة فقط)
 // ============================================================
 
 class MyCoursesPage extends StatefulWidget {
-  final String? selectedSessionId;
-  final List<SessionModel>? registeredSessions;
+  final String? selectedCourseId;
+  final List<CourseItem>? courses;
 
-  const MyCoursesPage({super.key, this.selectedSessionId,this.registeredSessions,
+  const MyCoursesPage({
+    super.key,
+    this.selectedCourseId,
+    this.courses,
   });
 
   @override
@@ -78,90 +34,58 @@ class MyCoursesPage extends StatefulWidget {
 class _MyCoursesPageState extends State<MyCoursesPage> {
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
-  String _selectedSessionId = '';
-  List<SessionModel> sessions = [];
+  List<CourseItem> courses = [];
+  String _selectedCategoryId = '';
+
+  // ✅ Cache للجلسات (المفتاح: courseId)
+  final Map<String, List<Session>> _cachedSessions = {};
+  // ✅ Cache للمحتوى (المفتاح: '${courseId}_${sessionId}')
+  final Map<String, List<CourseContent>> _cachedContents = {};
 
   @override
   void initState() {
     super.initState();
+    _loadCourses();
+  }
 
-    // ✅ استخدم الكورسات المسجلة إن وجدت، وإلا قائمة فارغة
-    if (widget.registeredSessions != null && widget.registeredSessions!.isNotEmpty) {
-      sessions = widget.registeredSessions!;
-      if (widget.selectedSessionId != null) {
-        _selectedSessionId = widget.selectedSessionId!;
-      } else {
-        _selectedSessionId = sessions.first.id;
-      }
-    } else {
-      sessions = [];
+  void _loadCourses() {
+    if (widget.courses != null && widget.courses!.isNotEmpty) {
+      setState(() {
+        courses = widget.courses!;
+        if (widget.selectedCourseId != null) {
+          _selectedCategoryId = widget.selectedCourseId!;
+        }
+      });
     }
   }
 
-  // ✅ دالة لتحميل الكورسات المسجلة (ستأتي من API لاحقاً)
-  void _loadRegisteredCourses() {
-    // ✅ حالياً: بيانات فارغة، ستأتي من HomePage
-    // سيتم تمرير الكورسات المسجلة من HomePage عبر constructor
-    sessions = [];
+  List<CourseItem> get _filteredCourses {
+    if (_searchQuery.isEmpty) return courses;
+    return courses.where((course) {
+      return course.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          course.trainerName.toLowerCase().contains(_searchQuery.toLowerCase());
+    }).toList();
   }
 
-  // ✅ دالة لتحديث الكورسات المسجلة (تستدعى من HomePage)
-  void updateRegisteredCourses(List<SessionModel> registeredSessions) {
-    setState(() {
-      sessions = registeredSessions;
-      if (sessions.isNotEmpty && _selectedSessionId.isEmpty) {
-        _selectedSessionId = sessions.first.id;
-      }
-    });
-  }
+  int get _totalResultsCount => _filteredCourses.length;
 
-  // دالة لفلترة الجلسات والكورسات حسب البحث
-  List<MapEntry<SessionModel, List<CourseModel>>> get _filteredSessionsAndCourses {
-    if (_searchQuery.isEmpty) {
-      return sessions.expand((session) {
-        return [MapEntry(session, session.courses)];
-      }).toList();
-    }
-
-    final results = <MapEntry<SessionModel, List<CourseModel>>>[];
-    for (var session in sessions) {
-      final sessionMatches = session.title.toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchingCourses = session.courses.where((course) {
-        return course.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            course.trainer.toLowerCase().contains(_searchQuery.toLowerCase());
-      }).toList();
-      if (sessionMatches || matchingCourses.isNotEmpty) {
-        results.add(MapEntry(session, sessionMatches ? session.courses : matchingCourses));
-      }
-    }
-    return results;
-  }
-
-  int get _totalResultsCount {
-    if (_searchQuery.isEmpty) return sessions.fold(0, (sum, session) => sum + session.courses.length);
-    int count = 0;
-    for (var entry in _filteredSessionsAndCourses) {
-      count += entry.value.length;
-    }
-    return count;
-  }
-
-  List<CourseModel> get _filteredCourses {
-    if (_selectedSessionId.isEmpty && sessions.isNotEmpty) {
-      _selectedSessionId = sessions.first.id;
-    }
-
+  // ✅ جلب الجلسات من الـ API
+  Future<List<Session>> _fetchSessions(String courseId) async {
     try {
-      final selectedSession = sessions.firstWhere((s) => s.id == _selectedSessionId);
-      var courses = List<CourseModel>.from(selectedSession.courses);
-      if (_searchQuery.isNotEmpty) {
-        courses = courses.where((course) {
-          return course.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-              course.trainer.toLowerCase().contains(_searchQuery.toLowerCase());
-        }).toList();
-      }
-      return courses;
+      return await CourseRepository().getCourseSessions(courseId);
     } catch (e) {
+      print('❌ Error fetching sessions: $e');
+      return [];
+    }
+  }
+
+  // ✅ جلب المحتوى الخاص بجلسة معينة
+  Future<List<CourseContent>> _fetchContentForSession(String courseId, int sessionId) async {
+    try {
+      final allContent = await CourseRepository().getCourseContent(courseId);
+      return allContent.where((c) => c.courseSession == sessionId).toList();
+    } catch (e) {
+      print('❌ Error fetching content: $e');
       return [];
     }
   }
@@ -190,7 +114,7 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
           ),
         ),
       ),
-      body: sessions.isEmpty
+      body: courses.isEmpty
           ? Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -209,188 +133,76 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
           ],
         ),
       )
-          : SingleChildScrollView(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: Column(
-          children: [
-            // ==================== حقل البحث ====================
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Container(
-                decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: (value) => setState(() => _searchQuery = value),
-                  decoration: InputDecoration(
-                    hintText: 'Search by course name or trainer...',
-                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                      icon: const Icon(Icons.clear, color: Colors.grey),
-                      onPressed: () => setState(() {
-                        _searchQuery = '';
-                        _searchController.clear();
-                      }),
-                    )
-                        : null,
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
+          : Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Container(
+              decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (value) => setState(() => _searchQuery = value),
+                decoration: InputDecoration(
+                  hintText: 'Search by course name or trainer...',
+                  prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                    icon: const Icon(Icons.clear, color: Colors.grey),
+                    onPressed: () => setState(() {
+                      _searchQuery = '';
+                      _searchController.clear();
+                    }),
+                  )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
                 ),
               ),
             ),
-
-            if (_searchQuery.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text('$_totalResultsCount results found', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-              ),
-
-            const SizedBox(height: 8),
-
-            if (_searchQuery.isEmpty && sessions.isNotEmpty)
-              Column(
+          ),
+          if (_searchQuery.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text('$_totalResultsCount results found', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+            ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: _filteredCourses.isEmpty
+                ? Center(
+              child: Column(
                 children: [
-                  // ==================== أزرار الجلسات ====================
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: sessions.map((session) {
-                        final isSelected = _selectedSessionId == session.id;
-                        return GestureDetector(
-                          onTap: () => setState(() {
-                            _selectedSessionId = session.id;
-                            _searchQuery = '';
-                            _searchController.clear();
-                          }),
-                          child: Container(
-                            width: (MediaQuery.of(context).size.width - 48) / 2,
-                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                            decoration: BoxDecoration(
-                              gradient: isSelected ? LinearGradient(colors: [session.color, session.color.withOpacity(0.7)]) : null,
-                              color: isSelected ? null : Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: isSelected ? session.color : Colors.grey.shade300, width: isSelected ? 0 : 1.5),
-                              boxShadow: [BoxShadow(color: isSelected ? session.color.withOpacity(0.3) : Colors.grey.withOpacity(0.1), blurRadius: 6)],
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(session.icon, style: const TextStyle(fontSize: 28)),
-                                const SizedBox(height: 4),
-                                Text(
-                                  session.title,
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isSelected ? Colors.white : Colors.black87),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '${session.courses.length} courses',
-                                  style: TextStyle(fontSize: 10, color: isSelected ? Colors.white70 : Colors.grey[600]),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
+                  const SizedBox(height: 50),
+                  Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
                   const SizedBox(height: 16),
-
-                  // ==================== عنوان القسم ====================
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            _selectedSessionId.isNotEmpty && sessions.isNotEmpty
-                                ? sessions.firstWhere((s) => s.id == _selectedSessionId).title
-                                : '',
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        Text(
-                          '${_filteredCourses.length} courses',
-                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // ==================== قائمة الكورسات ====================
-                  _filteredCourses.isEmpty
-                      ? Center(
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 50),
-                        Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
-                        const SizedBox(height: 16),
-                        Text('No courses found', style: TextStyle(color: Colors.grey[600], fontSize: 16)),
-                      ],
-                    ),
-                  )
-                      : ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _filteredCourses.length,
-                    itemBuilder: (context, index) => _buildCourseCard(_filteredCourses[index]),
-                  ),
+                  Text('No courses found', style: TextStyle(color: Colors.grey[600], fontSize: 16)),
                 ],
               ),
-
-            if (_searchQuery.isNotEmpty)
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
-                itemCount: _filteredSessionsAndCourses.length,
-                itemBuilder: (context, index) {
-                  final entry = _filteredSessionsAndCourses[index];
-                  final session = entry.key;
-                  final matchingCourses = entry.value;
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8, bottom: 8),
-                        child: Row(
-                          children: [
-                            Text(session.icon, style: const TextStyle(fontSize: 20)),
-                            const SizedBox(width: 8),
-                            Text(session.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.deepPurple)),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(10)),
-                              child: Text('${matchingCourses.length} courses', style: const TextStyle(fontSize: 10, color: Colors.grey)),
-                            ),
-                          ],
-                        ),
-                      ),
-                      ...matchingCourses.map((course) => _buildCourseCard(course)).toList(),
-                      const SizedBox(height: 8),
-                      const Divider(),
-                    ],
-                  );
-                },
-              ),
-            const SizedBox(height: 20),
-          ],
-        ),
+            )
+                : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _filteredCourses.length,
+              itemBuilder: (context, index) => _buildCourseCard(_filteredCourses[index]),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  // ==================== بطاقة الكورس ====================
-  Widget _buildCourseCard(CourseModel course) {
+  Widget _buildCourseCard(CourseItem course) {
     return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => CurriculumPage(course: course))),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CurriculumPage(
+            course: course,
+            cachedSessions: _cachedSessions,
+            cachedContents: _cachedContents,
+            fetchSessions: _fetchSessions,
+            fetchContentForSession: _fetchContentForSession,
+          ),
+        ),
+      ),
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
@@ -406,28 +218,34 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
               children: [
                 Container(
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: Colors.deepPurple.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                  child: const Icon(Icons.menu_book, color: Colors.deepPurple, size: 30),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [Colors.deepPurple, Colors.purple]),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.menu_book, color: Colors.white, size: 30),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(course.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      Text(course.title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
-                      Text(course.trainer, style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                      Text(course.trainerName, style: TextStyle(fontSize: 13, color: Colors.grey[600])),
                     ],
                   ),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(color: Colors.deepPurple.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [Colors.deepPurple, Colors.purple]),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                   child: Row(
                     children: [
-                      const Icon(Icons.access_time, size: 12, color: Colors.deepPurple),
+                      const Icon(Icons.access_time, size: 12, color: Colors.white),
                       const SizedBox(width: 4),
-                      Text(course.hours, style: const TextStyle(fontSize: 11, color: Colors.deepPurple)),
+                      Text(course.totalHours, style: const TextStyle(fontSize: 11, color: Colors.white)),
                     ],
                   ),
                 ),
@@ -455,7 +273,7 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Text('${course.curriculum.length} lessons', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                Text('${course.totalLessons} lessons', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
               ],
             ),
           ],
@@ -466,18 +284,64 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
 }
 
 // ============================================================
-// صفحة المنهاج (Curriculum Page)
+// 📖 صفحة المنهاج (Curriculum Page) - مع جلب ديناميكي
 // ============================================================
-class CurriculumPage extends StatelessWidget {
-  final CourseModel course;
 
-  const CurriculumPage({super.key, required this.course});
+class CurriculumPage extends StatefulWidget {
+  final CourseItem course;
+  final Map<String, List<Session>> cachedSessions;
+  final Map<String, List<CourseContent>> cachedContents;
+  final Future<List<Session>> Function(String) fetchSessions;
+  final Future<List<CourseContent>> Function(String, int) fetchContentForSession;
+
+  const CurriculumPage({
+    super.key,
+    required this.course,
+    required this.cachedSessions,
+    required this.cachedContents,
+    required this.fetchSessions,
+    required this.fetchContentForSession,
+  });
+
+  @override
+  State<CurriculumPage> createState() => _CurriculumPageState();
+}
+
+class _CurriculumPageState extends State<CurriculumPage> {
+  List<Session> _sessions = [];
+  bool _isLoadingSessions = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSessions();
+  }
+
+  Future<void> _loadSessions() async {
+    setState(() => _isLoadingSessions = true);
+    try {
+      List<Session> sessions;
+      if (widget.cachedSessions.containsKey(widget.course.id)) {
+        sessions = widget.cachedSessions[widget.course.id]!;
+      } else {
+        sessions = await widget.fetchSessions(widget.course.id);
+        widget.cachedSessions[widget.course.id] = sessions;
+      }
+      setState(() {
+        _sessions = sessions;
+        _isLoadingSessions = false;
+      });
+    } catch (e) {
+      print('❌ Error loading sessions: $e');
+      setState(() => _isLoadingSessions = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(course.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text(widget.course.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.deepPurple,
         centerTitle: true,
         elevation: 0,
@@ -491,49 +355,72 @@ class CurriculumPage extends StatelessWidget {
       ),
       body: Column(
         children: [
+          // 🎓 رأس الكورس (Course Header)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.deepPurple.withOpacity(0.1),
-              borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),
+              gradient: const LinearGradient(colors: [Colors.deepPurple, Colors.purple]),
+              borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(30), bottomRight: Radius.circular(30)),
             ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Icon(Icons.menu_book, color: Colors.white, size: 40),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  widget.course.title,
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Trainer: ${widget.course.trainerName}',
+                  style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.9)),
+                ),
+                const SizedBox(height: 16),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: Colors.deepPurple.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
-                      child: const Icon(Icons.menu_book, color: Colors.deepPurple, size: 40),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
                         children: [
-                          Text(course.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 4),
-                          Text('Trainer: ${course.trainer}', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                          const Icon(Icons.access_time, size: 14, color: Colors.white),
+                          const SizedBox(width: 4),
+                          Text(widget.course.totalHours, style: const TextStyle(color: Colors.white, fontSize: 12)),
                         ],
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                LinearProgressIndicator(
-                  value: course.progress / 100,
-                  backgroundColor: Colors.grey.shade200,
-                  color: Colors.deepPurple,
-                  minHeight: 8,
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('${course.progress}% Complete', style: TextStyle(fontSize: 12, color: Colors.deepPurple)),
-                    Text('${course.curriculum.length} Lessons', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.trending_up, size: 14, color: Colors.white),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${widget.course.progress}%',
+                            style: const TextStyle(color: Colors.white, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -550,14 +437,30 @@ class CurriculumPage extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Expanded(
-            child: ListView.builder(
+            child: _isLoadingSessions
+                ? const Center(child: CircularProgressIndicator())
+                : _sessions.isEmpty
+                ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.video_library_outlined, size: 64, color: Colors.grey[400]),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No sessions available for this course yet',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                  ),
+                ],
+              ),
+            )
+                : ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: course.curriculum.length,
+              itemCount: _sessions.length,
               itemBuilder: (context, index) {
-                final lesson = course.curriculum[index];
-                return _buildLessonCard(lesson, index + 1);
+                final session = _sessions[index];
+                return _buildSessionCard(session);
               },
             ),
           ),
@@ -566,56 +469,180 @@ class CurriculumPage extends StatelessWidget {
     );
   }
 
-  Widget _buildLessonCard(LessonModel lesson, int number) {
+  Widget _buildSessionCard(Session session) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 2,
+      child: ExpansionTile(
         leading: Container(
-          width: 40,
-          height: 40,
+          width: 45,
+          height: 45,
           decoration: BoxDecoration(
-            color: lesson.isCompleted
-                ? Colors.green.withOpacity(0.1)
-                : (lesson.type == 'video' ? Colors.deepPurple.withOpacity(0.1) : Colors.orange.withOpacity(0.1)),
-            borderRadius: BorderRadius.circular(10),
+            gradient: const LinearGradient(colors: [Colors.deepPurple, Colors.purple]),
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: Center(
-            child: lesson.isCompleted
-                ? const Icon(Icons.check_circle, color: Colors.green, size: 24)
-                : Icon(
-              lesson.type == 'video' ? Icons.play_arrow : Icons.picture_as_pdf,
-              color: lesson.type == 'video' ? Colors.deepPurple : Colors.orange,
-              size: 24,
-            ),
-          ),
+          child: const Icon(Icons.video_library, color: Colors.white, size: 24),
         ),
         title: Text(
-          lesson.title,
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: lesson.isCompleted ? FontWeight.normal : FontWeight.w500,
-            color: lesson.isCompleted ? Colors.grey[600] : Colors.black87,
-          ),
+          session.title,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
-        subtitle: Row(
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.access_time, size: 12, color: Colors.grey),
-            const SizedBox(width: 4),
-            Text(lesson.duration, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+            const SizedBox(height: 4),
+            Text(
+              session.description.isNotEmpty ? session.description : 'No description',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${session.lessonsCount} lessons',
+              style: TextStyle(fontSize: 11, color: Colors.deepPurple),
+            ),
           ],
         ),
-        trailing: lesson.isCompleted
-            ? const Icon(Icons.play_circle_outline, color: Colors.grey)
-            : ElevatedButton(
-          onPressed: () {},
-          style: ElevatedButton.styleFrom(
-            backgroundColor: lesson.type == 'video' ? Colors.deepPurple : Colors.orange,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        children: [
+          // ✅ جلب المحتوى ديناميكياً لكل جلسة
+          FutureBuilder<List<CourseContent>>(
+            future: widget.cachedContents.containsKey('${widget.course.id}_${session.id}')
+                ? Future.value(widget.cachedContents['${widget.course.id}_${session.id}'])
+                : widget.fetchContentForSession(widget.course.id, session.id),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'No content available for this session',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                  ),
+                );
+              }
+              final contents = snapshot.data!;
+              if (!widget.cachedContents.containsKey('${widget.course.id}_${session.id}')) {
+                widget.cachedContents['${widget.course.id}_${session.id}'] = contents;
+              }
+              return Column(
+                children: [
+                  ...contents.map((content) => _buildLessonCard(content)),
+                  const SizedBox(height: 8),
+                ],
+              );
+            },
           ),
-          child: Text(lesson.type == 'video' ? 'Watch' : 'View'),
-        ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLessonCard(CourseContent content) {
+    final isVideo = content.contentType.toLowerCase() == 'video';
+    final isPdf = content.contentType.toLowerCase() == 'pdf';
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              gradient: isVideo
+                  ? const LinearGradient(colors: [Colors.deepPurple, Colors.purple])
+                  : (isPdf
+                  ? const LinearGradient(colors: [Colors.red, Colors.deepOrange])
+                  : const LinearGradient(colors: [Colors.blue, Colors.lightBlue])),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              isVideo ? Icons.play_arrow : (isPdf ? Icons.picture_as_pdf : Icons.insert_drive_file),
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  content.title,
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: isVideo ? Colors.deepPurple.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        content.contentType.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: isVideo ? Colors.deepPurple : Colors.grey[700],
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Order: ${content.contentOrder}',
+                      style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              if (content.fileUrl != null && content.fileUrl!.isNotEmpty) {
+                // TODO: فتح الرابط باستخدام url_launcher
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Opening: ${content.title}')),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('No file available')),
+                );
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: isVideo
+                    ? const LinearGradient(colors: [Colors.deepPurple, Colors.purple])
+                    : (isPdf
+                    ? const LinearGradient(colors: [Colors.red, Colors.deepOrange])
+                    : const LinearGradient(colors: [Colors.blue, Colors.lightBlue])),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                isVideo ? 'Watch' : (isPdf ? 'View PDF' : 'Open'),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

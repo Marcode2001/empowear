@@ -663,10 +663,10 @@ class _TrainerChatDetailPageState extends State<TrainerChatDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    // final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true ,
       appBar: AppBar(
         title: Row(
           children: [
@@ -731,7 +731,7 @@ class _TrainerChatDetailPageState extends State<TrainerChatDetailPage> {
             child: AnimatedPadding(
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeOut,
-              padding: EdgeInsets.only(bottom: 0),
+              padding: EdgeInsets.only(bottom: keyboardHeight),
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _messages.isEmpty
@@ -751,18 +751,18 @@ class _TrainerChatDetailPageState extends State<TrainerChatDetailPage> {
               ),
             ),
           ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: AnimatedPadding(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOut,
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-              ),
-              child: _buildInputBar(),
+          // Positioned(
+          //   left: 0,
+          //   right: 0,
+          //   bottom: 0,
+
+          AnimatedPadding(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
             ),
+            child: _buildInputBar(),
           ),
         ],
       ),

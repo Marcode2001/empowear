@@ -1,8 +1,16 @@
+// 📄 lib/screens/trainee/ai_material_checker_page.dart
+// ============================================================
+// 🔍 صفحة فحص جودة المواد بالذكاء الاصطناعي
+// ============================================================
+// الوظيفة: تحليل صورة القماش لتحديد نوع المادة
+// - رفع صورة (معرض أو كاميرا)
+// - تحليل الصورة بواسطة AI
+// - عرض نتيجة التحليل (نوع القماش)
+
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 
-// ==================== صفحة AI Material Checker ====================
 class AIMaterialCheckerPage extends StatefulWidget {
   const AIMaterialCheckerPage({super.key});
 
@@ -11,19 +19,13 @@ class AIMaterialCheckerPage extends StatefulWidget {
 }
 
 class _AIMaterialCheckerPageState extends State<AIMaterialCheckerPage> {
-  // متغير لتخزين الصورة المرفوعة
+  // ✅ متغيرات الحالة
   File? _selectedImage;
-
-  // متغير لإظهار مؤشر التحميل أثناء معالجة الصورة
   bool _isLoading = false;
-
-  // متغير لتخزين نوع القماش الذي سيعيده الـ AI
   String? _fabricType;
-
-  // متغير لتخزين تفاصيل النتيجة الكاملة
   String? _generatedResult;
 
-  // ==================== دالة اختيار الصورة من المعرض ====================
+  // ✅ اختيار صورة من المعرض
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
@@ -32,12 +34,11 @@ class _AIMaterialCheckerPageState extends State<AIMaterialCheckerPage> {
         _selectedImage = File(pickedFile.path);
         _generatedResult = null;
         _fabricType = null;
-        _isLoading = false;
       });
     }
   }
 
-  // ==================== دالة التقاط صورة من الكاميرا ====================
+  // ✅ التقاط صورة من الكاميرا
   Future<void> _takePhoto() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
@@ -46,14 +47,12 @@ class _AIMaterialCheckerPageState extends State<AIMaterialCheckerPage> {
         _selectedImage = File(pickedFile.path);
         _generatedResult = null;
         _fabricType = null;
-        _isLoading = false;
       });
     }
   }
 
-  // ==================== دالة تحليل القماش ====================
+  // ✅ تحليل القماش
   Future<void> _analyzeMaterial() async {
-    // التحقق من وجود صورة
     if (_selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -64,7 +63,6 @@ class _AIMaterialCheckerPageState extends State<AIMaterialCheckerPage> {
       return;
     }
 
-    // تفعيل حالة التحميل
     setState(() {
       _isLoading = true;
       _generatedResult = null;
@@ -72,9 +70,9 @@ class _AIMaterialCheckerPageState extends State<AIMaterialCheckerPage> {
     });
 
     // محاكاة وقت معالجة الـ AI
-    await Future.delayed(const Duration(seconds: 1));
+    await Future.delayed(const Duration(seconds: 2));
 
-    // 🚀 هنا سيتم استبدال هذا الجزء بطلب حقيقي إلى الـ AI
+    // ✅ قائمة أنواع الأقمشة (للتجربة)
     final List<String> fabricTypes = [
       'Cotton',
       'Linen',
@@ -88,17 +86,15 @@ class _AIMaterialCheckerPageState extends State<AIMaterialCheckerPage> {
       'Rayon',
     ];
 
-    // اختيار نوع قماش عشوائي (للتجربة فقط)
+    // اختيار نوع قماش عشوائي
     final randomIndex = DateTime.now().millisecondsSinceEpoch % fabricTypes.length;
     _fabricType = fabricTypes[randomIndex.toInt()];
 
-    // بناء النتيجة النهائية
     setState(() {
       _generatedResult = '✅ Material Analysis Complete!';
-      _isLoading = false; // ✅ إيقاف مؤشر التحميل
+      _isLoading = false;
     });
 
-    //  snackbar عرض رسالة نجاح
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -109,7 +105,7 @@ class _AIMaterialCheckerPageState extends State<AIMaterialCheckerPage> {
     }
   }
 
-  // ==================== دالة بناء أزرار الصورة ====================
+  // ✅ زر رفع الصورة
   Widget _buildImageButton({
     required IconData icon,
     required String label,
@@ -138,11 +134,9 @@ class _AIMaterialCheckerPageState extends State<AIMaterialCheckerPage> {
     );
   }
 
-  // ==================== بناء واجهة المستخدم ====================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // ==================== شريط التطبيق العلوي ====================
       appBar: AppBar(
         title: const Text(
           'AI Material Checker',
@@ -168,8 +162,6 @@ class _AIMaterialCheckerPageState extends State<AIMaterialCheckerPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-
-      // ==================== خلفية الصفحة ====================
       backgroundColor: Colors.white,
       body: Container(
         width: double.infinity,
@@ -265,7 +257,6 @@ class _AIMaterialCheckerPageState extends State<AIMaterialCheckerPage> {
                       boxShadow: [
                         BoxShadow(
                           color: Colors.deepPurple.withOpacity(0.08),
-
                         ),
                       ],
                     ),
@@ -424,7 +415,6 @@ class _AIMaterialCheckerPageState extends State<AIMaterialCheckerPage> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        // 🎨 لون متناسب مع الصفحة (بنفسجي فاتح)
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -477,7 +467,7 @@ class _AIMaterialCheckerPageState extends State<AIMaterialCheckerPage> {
                           ),
                           const SizedBox(height: 16),
 
-                          // عرض نوع القماش بشكل مميز
+                          // عرض نوع القماش
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(12),

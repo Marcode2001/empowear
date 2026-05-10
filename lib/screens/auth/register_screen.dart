@@ -1,10 +1,9 @@
+// 📄 lib/screens/auth/register_screen.dart
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../bloc/auth/auth_bloc.dart';
 import '../../models/user_model.dart';
-import '../../providers/auth_provider.dart';
 import '../trainer/trainer_home_screen.dart';
 import '../trainee/trainee_home_screen.dart';
 import 'login_screen.dart';
@@ -163,7 +162,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                     ),
                     const SizedBox(height: 30),
 
-                    // ==================== عنوان الصفحة مع تأثيرات ====================
+                    // ==================== عنوان الصفحة ====================
                     FadeTransition(
                       opacity: _fadeAnimation,
                       child: SlideTransition(
@@ -472,8 +471,40 @@ class _RegisterScreenState extends State<RegisterScreen>
                                 // ==================== زر التسجيل ====================
                                 SizedBox(
                                   width: double.infinity,
-                                  child: Consumer<AuthProvider>(
-                                    builder: (context, authProvider, child) {
+                                  child: BlocConsumer<AuthBloc, AuthState>(
+                                    listener: (context, state) {
+                                      // ✅ الاستماع لحالة التسجيل
+                                      if (state is AuthAuthenticated) {
+                                        // التسجيل ناجح - التنقل حسب نوع المستخدم
+                                        Widget nextScreen;
+                                        if (state.user.userType == UserType.trainer) {
+                                          nextScreen = const TrainerHomeScreen();
+                                        } else {
+                                          nextScreen = const TraineeHomeScreen();
+                                        }
+
+                                        Navigator.pushReplacement(
+                                          context,
+                                          MaterialPageRoute(builder: (context) => nextScreen),
+                                        );
+
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Account created successfully!'),
+                                            backgroundColor: Colors.green,
+                                          ),
+                                        );
+                                      } else if (state is AuthError) {
+                                        // عرض رسالة الخطأ
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(state.message),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    builder: (context, state) {
                                       return AnimatedContainer(
                                         duration: const Duration(milliseconds: 300),
                                         decoration: BoxDecoration(
@@ -492,21 +523,19 @@ class _RegisterScreenState extends State<RegisterScreen>
                                           ],
                                         ),
                                         child: ElevatedButton(
-                                          onPressed: authProvider.isLoading
+                                          onPressed: state is AuthLoading
                                               ? null
-                                              : () => _register(authProvider),
+                                              : () => _register(),
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: Colors.transparent,
                                             shadowColor: Colors.transparent,
                                             elevation: 0,
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 14,
-                                            ),
+                                            padding: const EdgeInsets.symmetric(vertical: 14),
                                             shape: RoundedRectangleBorder(
                                               borderRadius: BorderRadius.circular(30),
                                             ),
                                           ),
-                                          child: authProvider.isLoading
+                                          child: state is AuthLoading
                                               ? const SizedBox(
                                             height: 24,
                                             width: 24,
@@ -633,43 +662,18 @@ class _RegisterScreenState extends State<RegisterScreen>
     );
   }
 
-  // ==================== دالة التسجيل ====================
-  void _register(AuthProvider authProvider) async {
+  // ==================== دالة التسجيل المعدلة لاستخدام BLoC ====================
+  void _register() {
     if (_formKey.currentState!.validate()) {
-      bool success = await authProvider.register(
-        _nameController.text.trim(),
-        _emailController.text.trim(),
-        _passwordController.text.trim(),
-        _selectedUserType,
+      // ✅ إرسال حدث التسجيل إلى AuthBloc
+      context.read<AuthBloc>().add(
+        RegisterEvent(
+          name: _nameController.text.trim(),
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+          userType: _selectedUserType,
+        ),
       );
-
-      if (success && mounted) {
-        Widget nextScreen;
-        if (authProvider.isTrainer) {
-          nextScreen = const TrainerHomeScreen();
-        } else {
-          nextScreen = const TraineeHomeScreen();
-        }
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => nextScreen),
-        );
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Account created successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Registration failed. Please try again.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
     }
   }
 }

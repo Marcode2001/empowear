@@ -1,5 +1,10 @@
+// 📄 lib/screens/trainee/students_projects_page.dart
 import 'package:flutter/material.dart';
-// ==================== صفحة مشاريع الطلاب (Students Projects) ====================
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../bloc/project/project_bloc.dart';
+import '../../models/project_models.dart';
+
+// ==================== صفحة المشاريع المميزة للطلاب ====================
 class StudentsProjectsPage extends StatefulWidget {
   const StudentsProjectsPage({super.key});
 
@@ -8,88 +13,14 @@ class StudentsProjectsPage extends StatefulWidget {
 }
 
 class _StudentsProjectsPageState extends State<StudentsProjectsPage> {
-  // متغير لتخزين المشاريع القادمة من API
-  List<Map<String, dynamic>> projects = [];
-
-  // متغير لحالة التحميل
-  bool isLoading = true;
-
-  // متغير للخطأ
-  String? errorMessage;
-
   @override
   void initState() {
     super.initState();
-    _fetchProjects();
+    _loadFeaturedProjects();
   }
 
-  // دالة لجلب المشاريع من الباك اند
-  Future<void> _fetchProjects() async {
-    setState(() {
-      isLoading = true;
-      errorMessage = null;
-    });
-
-    try {
-      await Future.delayed(const Duration(seconds: 1));
-
-      projects = [
-        {
-          'title': 'EcoTrack App',
-          'studentName': 'Ahmed Mansour',
-          'description': 'An app that helps users track their carbon footprint',
-          'imageUrl': 'https://picsum.photos/id/1/400/300',
-        },
-        {
-          'title': 'Smart Home',
-          'studentName': 'Lina Hassan',
-          'description': 'Control smart home devices remotely',
-          'imageUrl': 'https://picsum.photos/id/2/400/300',
-        },
-        {
-          'title': 'MediAssist AI',
-          'studentName': 'Omar Khalid',
-          'description': 'AI-powered medical assistant',
-          'imageUrl': 'https://picsum.photos/id/3/400/300',
-        },
-        {
-          'title': 'Food Delivery',
-          'studentName': 'Sara Ahmed',
-          'description': 'Fast food delivery application',
-          'imageUrl': 'https://picsum.photos/id/4/400/300',
-        },
-        {
-          'title': 'Portfolio Gen',
-          'studentName': 'Nour ElDin',
-          'description': 'Generate beautiful portfolios',
-          'imageUrl': 'https://picsum.photos/id/5/400/300',
-        },
-        {
-          'title': 'Space Shooter',
-          'studentName': 'Ali Mohammed',
-          'description': 'Exciting space shooter game',
-          'imageUrl': 'https://picsum.photos/id/6/400/300',
-        },
-        {
-          'title': 'Weather AI',
-          'studentName': 'Mariam Adel',
-          'description': 'Weather predictions using AI',
-          'imageUrl': 'https://picsum.photos/id/7/400/300',
-        },
-        {
-          'title': 'UI Library',
-          'studentName': 'Hassan Ali',
-          'description': 'UI component library for Flutter',
-          'imageUrl': 'https://picsum.photos/id/8/400/300',
-        },
-      ];
-    } catch (e) {
-      errorMessage = 'Error: $e';
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
-    }
+  void _loadFeaturedProjects() {
+    context.read<ProjectBloc>().add(const LoadFeaturedProjectsEvent());
   }
 
   @override
@@ -100,107 +31,121 @@ class _StudentsProjectsPageState extends State<StudentsProjectsPage> {
           'Students Projects',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
+        // ✅ إضافة التدرج اللوني للـ AppBar
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.deepPurple, Colors.purple],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         backgroundColor: Colors.deepPurple,
         centerTitle: true,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: _buildBody(),
-    );
-  }
-
-  Widget _buildBody() {
-    if (isLoading) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(color: Colors.deepPurple),
-            SizedBox(height: 16),
-            Text('Loading projects...'),
-          ],
-        ),
-      );
-    }
-
-    if (errorMessage != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(errorMessage!),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _fetchProjects,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
+      body: BlocConsumer<ProjectBloc, ProjectState>(
+        listener: (context, state) {
+          if (state is ProjectError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
               ),
-              child: const Text('Try Again'),
-            ),
-          ],
-        ),
-      );
-    }
+            );
+          }
+        },
+        builder: (context, state) {
+          if (state is ProjectLoading) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: Colors.deepPurple),
+                  SizedBox(height: 16),
+                  Text('Loading projects...'),
+                ],
+              ),
+            );
+          }
 
-    if (projects.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.folder_open, size: 64, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            const Text('No projects found'),
-          ],
-        ),
-      );
-    }
+          if (state is ProjectError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
+                  const SizedBox(height: 16),
+                  Text(state.message),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadFeaturedProjects,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                    ),
+                    child: const Text('Try Again'),
+                  ),
+                ],
+              ),
+            );
+          }
 
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.75,
+          if (state is FeaturedProjectsLoaded) {
+            final projects = state.projects;
+
+            if (projects.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.folder_open, size: 64, color: Colors.grey[400]),
+                    const SizedBox(height: 16),
+                    const Text('No featured projects yet'),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Check back later for inspiring student work!',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            // ✅ استخدام GridView مباشرة بدون SingleChildScrollView إضافي
+            return GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.7,  // ✅ تعديل النسبة لمنع overflow
+              ),
+              itemCount: projects.length,
+              itemBuilder: (context, index) {
+                final project = projects[index];
+                return _buildProjectCard(project);
+              },
+            );
+          }
+
+          return const SizedBox.shrink();
+        },
       ),
-      itemCount: projects.length,
-      itemBuilder: (context, index) {
-        final project = projects[index];
-        return _buildProjectCard(
-          title: project['title'] as String,
-          studentName: project['studentName'] as String,
-          description: project['description'] as String,
-          imageUrl: project['imageUrl'] as String?,
-        );
-      },
     );
   }
 
-  Widget _buildProjectCard({
-    required String title,
-    required String studentName,
-    required String description,
-    String? imageUrl,
-  }) {
+  Widget _buildProjectCard(FeaturedProject project) {
     return GestureDetector(
       onTap: () {
-        // فتح صفحة تفاصيل المشروع مع الصورة الكاملة
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProjectDetailPage(
-              title: title,
-              studentName: studentName,
-              description: description,
-              imageUrl: imageUrl,
-            ),
+            builder: (context) => ProjectDetailPage(project: project),
           ),
         );
       },
@@ -213,28 +158,29 @@ class _StudentsProjectsPageState extends State<StudentsProjectsPage> {
               color: Colors.grey.withOpacity(0.1),
               blurRadius: 8,
               spreadRadius: 2,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // الصورة
+            // ✅ الصورة
             ClipRRect(
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
               ),
-              child: imageUrl != null && imageUrl.isNotEmpty
+              child: project.imageUrl != null && project.imageUrl!.isNotEmpty
                   ? Image.network(
-                imageUrl,
-                height: 140,
+                project.imageUrl!,
+                height: 120,
                 width: double.infinity,
                 fit: BoxFit.cover,
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
                   return Container(
-                    height: 140,
+                    height: 120,
                     width: double.infinity,
                     color: Colors.grey.shade100,
                     child: const Center(
@@ -248,14 +194,14 @@ class _StudentsProjectsPageState extends State<StudentsProjectsPage> {
               )
                   : _buildPlaceholderImage(),
             ),
-            // اسم المشروع واسم الطالب
+            // ✅ معلومات المشروع
             Padding(
               padding: const EdgeInsets.all(10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
+                    project.title,
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -264,13 +210,31 @@ class _StudentsProjectsPageState extends State<StudentsProjectsPage> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.person, size: 10, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          project.studentName,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey[600],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
                   Text(
-                    studentName,
+                    project.description,
                     style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[600],
+                      fontSize: 10,
+                      color: Colors.grey[500],
                     ),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
@@ -282,10 +246,9 @@ class _StudentsProjectsPageState extends State<StudentsProjectsPage> {
     );
   }
 
-  // صورة افتراضية إذا فشل تحميل الصورة
   Widget _buildPlaceholderImage() {
     return Container(
-      height: 140,
+      height: 120,
       width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.deepPurple.withOpacity(0.1),
@@ -303,19 +266,13 @@ class _StudentsProjectsPageState extends State<StudentsProjectsPage> {
   }
 }
 
-// ==================== صفحة تفاصيل المشروع (مع صورة كاملة) ====================
+// ==================== صفحة تفاصيل المشروع ====================
 class ProjectDetailPage extends StatelessWidget {
-  final String title;
-  final String studentName;
-  final String description;
-  final String? imageUrl;
+  final FeaturedProject project;
 
   const ProjectDetailPage({
     super.key,
-    required this.title,
-    required this.studentName,
-    required this.description,
-    this.imageUrl,
+    required this.project,
   });
 
   @override
@@ -323,35 +280,42 @@ class ProjectDetailPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          title,
+          project.title,
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        // ✅ إضافة التدرج اللوني للـ AppBar
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.deepPurple, Colors.purple],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
         ),
         backgroundColor: Colors.deepPurple,
         centerTitle: true,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          onPressed: () => Navigator.pop(context),
         ),
       ),
       body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // الصورة الكاملة في الأعلى
+            // ✅ الصورة
             Container(
               width: double.infinity,
-              height: 350,
-              decoration: BoxDecoration(
-                color: Colors.deepPurple.withOpacity(0.1),
-              ),
-              child: imageUrl != null && imageUrl!.isNotEmpty
+              height: 300,
+              color: Colors.deepPurple.withOpacity(0.1),
+              child: project.imageUrl != null && project.imageUrl!.isNotEmpty
                   ? Image.network(
-                imageUrl!,
+                project.imageUrl!,
                 width: double.infinity,
-                height: 350,
+                height: 300,
                 fit: BoxFit.cover,
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
@@ -389,51 +353,60 @@ class ProjectDetailPage extends StatelessWidget {
                 ),
               ),
             ),
-
-            // معلومات المشروع
+            // ✅ معلومات المشروع
             Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // عنوان المشروع
                   Text(
-                    title,
+                    project.title,
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.deepPurple.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.person,
+                          size: 16,
+                          color: Colors.deepPurple,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          project.studentName,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.deepPurple,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'About this project',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 8),
-
-                  // اسم الطالب
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.deepPurple.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.person,
-                              size: 16,
-                              color: Colors.deepPurple,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              studentName,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.deepPurple,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                  Text(
+                    project.description,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      height: 1.5,
+                    ),
                   ),
                 ],
               ),

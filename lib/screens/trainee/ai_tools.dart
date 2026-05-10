@@ -1,15 +1,26 @@
+// 📄 lib/screens/trainee/ai_tools.dart
+// ============================================================
+// 🤖 صفحة أدوات الذكاء الاصطناعي الرئيسية
+// ============================================================
+// الوظيفة: عرض أدوات الذكاء الاصطناعي المتاحة للطلاب
+// - تصميم أزياء بالذكاء الاصطناعي
+// - فحص جودة المواد
+
 import 'package:flutter/material.dart';
-import 'dart:io';
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../bloc/auth/auth_bloc.dart';
 import 'AIDesignGeneratorPage.dart';
 import 'AIMaterialCheckerPage.dart';
 
-// ==================== صفحة أدوات الذكاء الاصطناعي الرئيسية ====================
 class AiToolsPage extends StatelessWidget {
   const AiToolsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // ✅ الحصول على اسم المستخدم من AuthBloc
+    final authState = context.watch<AuthBloc>().state;
+    final userName = authState is AuthAuthenticated ? authState.user.name : 'Guest';
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Container(
@@ -85,9 +96,9 @@ class AiToolsPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Choose how you want AI to assist you',
+                          'Welcome $userName! Choose how AI can assist you',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 13,
                             color: Colors.grey[600],
                             letterSpacing: 0.5,
                           ),
@@ -144,6 +155,7 @@ class AiToolsPage extends StatelessWidget {
     );
   }
 
+  // ✅ دالة بناء بطاقة أداة الذكاء الاصطناعي
   Widget _buildAIToolCard({
     required BuildContext context,
     required String title,
@@ -183,6 +195,7 @@ class AiToolsPage extends StatelessWidget {
             ),
             child: Row(
               children: [
+                // أيقونة الأداة مع تدرج لوني
                 Container(
                   width: 65,
                   height: 65,
@@ -201,11 +214,7 @@ class AiToolsPage extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Icon(
-                    icon,
-                    color: Colors.white,
-                    size: 32,
-                  ),
+                  child: Icon(icon, color: Colors.white, size: 32),
                 ),
                 const SizedBox(width: 18),
                 Expanded(
@@ -243,6 +252,7 @@ class AiToolsPage extends StatelessWidget {
                     ],
                   ),
                 ),
+                // سهم دائري
                 Container(
                   width: 36,
                   height: 36,
