@@ -1,30 +1,32 @@
 // 📄 lib/screens/trainee/upload_project_page.dart
 // ============================================================
-// 📤 صفحة رفع مشروع جديد (Upload Project Page)
+// 📤 صفحة رفع مشروع جديد - متوافقة مع API design-submission
+// ✅ تسمح باختيار الكورس والجلسة من قائمة منسدلة
 // ============================================================
-// الوظيفة: تسمح للطالب برفع مشروعه الخاص
-// 1. إدخال اسم المشروع
-// 2. إدخال اسم الكورس
-// 3. رفع صورة (تظهر كاملة بدون قص)
-// 4. إرسال البيانات إلى المدرب للتصحيح
 
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../bloc/auth/auth_bloc.dart';
-import '../../bloc/project/project_bloc.dart';
-import '../../models/project_models.dart';
+import '../../bloc/course/course_bloc.dart';
+import '../../bloc/course/course_event.dart';
+import '../../bloc/course/course_state.dart';
+import '../../models/course_models.dart';
+import '../../services/api_service.dart';
+import 'package:empower/repositories/course_repository.dart';
 
 class UploadProjectPage extends StatefulWidget {
-  // ✅ معاملات الصفحة (اختيارية - يمكن تمريرها من الصفحات الأخرى)
-  final String? projectId;      // معرف المشروع (إذا كان مطلوباً من المدرب)
-  final String? courseName;     // اسم الكورس (يمكن تعبئته تلقائياً)
+  // ✅ البيانات الاختيارية (يمكن تمريرها من الصفحات الأخرى)
+  final int? preselectedCourseId;     // معرف الكورس المختار مسبقاً
+  final int? preselectedSessionId;    // معرف الجلسة المختارة مسبقاً
+  final String? preselectedCourseTitle; // عنوان الكورس (للعرض فقط)
 
   const UploadProjectPage({
     super.key,
-    this.projectId,
-    this.courseName,
+    this.preselectedCourseId,
+    this.preselectedSessionId,
+    this.preselectedCourseTitle,
   });
 
   @override
@@ -33,41 +35,90 @@ class UploadProjectPage extends StatefulWidget {
 
 class _UploadProjectPageState extends State<UploadProjectPage> {
   // ============================================================
-  // 📝 متحكمات حقول الإدخال (Controllers)
+  // 📝 متحكمات حقول الإدخال
   // ============================================================
-  final TextEditingController _projectNameController = TextEditingController();   // اسم المشروع
-  final TextEditingController _courseNameController = TextEditingController();     // اسم الكورس
-  final TextEditingController _trainerNameController = TextEditingController();    // اسم المدرب
+  final TextEditingController _titleController = TextEditingController();
 
-  // 🖼️ متغير الصورة المختارة
+  // 🖼️ الصورة المختارة
   File? _selectedImage;
 
-  // ⏳ حالة التحميل (إظهار مؤشر التحميل أثناء الإرسال)
+  // ⏳ حالة التحميل
   bool _isSubmitting = false;
+
+  // 📚 بيانات الكورسات والجلسات
+  List<CourseItem> _registeredCourses = [];
+  bool _isLoadingCourses = true;
+  int? _selectedCourseId;
+  int? _selectedSessionId;
+  int? _selectedSessionOrder;
+  String? _selectedCourseTitle;
+  List<Session> _sessions = [];
+  bool _isLoadingSessions = false;
 
   @override
   void initState() {
     super.initState();
-    // ✅ تعبئة الحقول إذا كانت هناك بيانات موجودة (ممررة من الصفحة السابقة)
-    if (widget.courseName != null) {
-      _courseNameController.text = widget.courseName!;
+    _loadRegisteredCourses();
+
+    // ✅ إذا تم تمرير بيانات مسبقة، استخدمها
+    if (widget.preselectedCourseId != null) {
+      _selectedCourseId = widget.preselectedCourseId;
+      _selectedCourseTitle = widget.preselectedCourseTitle;
+      if (widget.preselectedSessionId != null) {
+        _selectedSessionId = widget.preselectedSessionId;
+      }
     }
   }
 
   @override
   void dispose() {
-    // 🧹 تنظيف المتحكمات لتجنب تسرب الذاكرة
-    _projectNameController.dispose();
-    _courseNameController.dispose();
-    _trainerNameController.dispose();
+    _titleController.dispose();
     super.dispose();
+  }
+
+  // ============================================================
+  // 📚 تحميل الكورسات المسجلة
+  // ============================================================
+  Future<void> _loadRegisteredCourses() async {
+    setState(() => _isLoadingCourses = true);
+
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthAuthenticated) {
+      context.read<CourseBloc>().add(LoadRegisteredCoursesEvent(userId: authState.user.id , userType: authState.user.userType,));
+    }
+
+    // انتظار تحميل الكورسات من الـ BLoC
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    setState(() => _isLoadingCourses = false);
+  }
+
+  // ============================================================
+  // 📚 تحميل جلسات كورس معين
+  // ============================================================
+  Future<void> _loadSessions(int courseId) async {
+    setState(() {
+      _isLoadingSessions = true;
+      _sessions = [];
+      _selectedSessionId = null;
+      _selectedSessionOrder = null;
+    });
+
+    try {
+      final sessions = await CourseRepository().getCourseSessions(courseId.toString());
+      setState(() {
+        _sessions = sessions;
+        _isLoadingSessions = false;
+      });
+    } catch (e) {
+      print('❌ خطأ في تحميل الجلسات: $e');
+      setState(() => _isLoadingSessions = false);
+    }
   }
 
   // ============================================================
   // 📸 دوال اختيار الصورة
   // ============================================================
-
-  /// اختيار صورة من المعرض (Gallery)
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
@@ -78,7 +129,6 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
     }
   }
 
-  /// التقاط صورة من الكاميرا (Camera)
   Future<void> _takePhoto() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
@@ -92,28 +142,41 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
   // ============================================================
   // 📤 دالة إرسال المشروع
   // ============================================================
-  void _submitProject() async {
+  Future<void> _submitProject() async {
     // ✅ التحقق من صحة المدخلات
-    if (_projectNameController.text.trim().isEmpty) {
+    if (_titleController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter project name'),
+          content: Text('Please enter project title'),
           backgroundColor: Colors.orange,
         ),
       );
       return;
     }
 
-    if (_courseNameController.text.trim().isEmpty) {
+    // ✅ التحقق من اختيار الكورس
+    if (_selectedCourseId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter course name'),
+          content: Text('Please select a course'),
           backgroundColor: Colors.orange,
         ),
       );
       return;
     }
 
+    // ✅ التحقق من اختيار الجلسة
+    if (_selectedSessionId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a session'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // ✅ التحقق من اختيار الصورة
     if (_selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -129,51 +192,94 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
       _isSubmitting = true;
     });
 
-    // ✅ الحصول على بيانات المستخدم من AuthBloc
-    final authState = context.read<AuthBloc>().state;
-    if (authState is AuthAuthenticated) {
-      // ✅ إرسال حدث رفع المشروع إلى ProjectBloc
-      context.read<ProjectBloc>().add(SubmitProjectEvent(
-        projectId: widget.projectId ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        studentId: authState.user.id,
-        studentName: authState.user.name,
-        projectUrl: _selectedImage!.path,
-        description: '',
-      ));
+    try {
+      // ✅ بناء البيانات المطلوبة للـ API
+      final fields = {
+        'course': _selectedCourseId.toString(),
+        'course_session': _selectedSessionId.toString(),
+        'session_order': (_selectedSessionOrder ?? 1).toString(),
+        'title': _titleController.text.trim(),
+      };
+
+      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      print('📤 [Upload] إرسال مشروع جديد:');
+      print('   course: ${fields['course']}');
+      print('   course_session: ${fields['course_session']}');
+      print('   session_order: ${fields['session_order']}');
+      print('   title: ${fields['title']}');
+      print('   image path: ${_selectedImage!.path}');
+      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+      // ✅ إرسال الطلب إلى الـ API
+      final response = await ApiService.postMultipart(
+        endpoint: 'design-submission/trainee-create/',
+        fields: fields,
+        filePath: _selectedImage!.path,
+        fileFieldName: 'image',
+      );
+
+      print('📊 [Upload] استجابة الخادم: ${response['statusCode']}');
+      print('📝 [Upload] البيانات: ${response['data']}');
+
+      setState(() {
+        _isSubmitting = false;
+      });
+
+      if (response['success']) {
+        // ✅ عرض رسالة نجاح
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Project submitted successfully! Waiting for trainer review.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // ✅ تنظيف الحقول
+        _titleController.clear();
+        setState(() {
+          _selectedImage = null;
+        });
+
+        // ✅ العودة إلى الصفحة السابقة
+        Navigator.pop(context);
+      } else {
+        // ❌ عرض رسالة خطأ
+        String errorMessage = 'Failed to submit project';
+        final data = response['data'];
+        if (data is Map<String, dynamic>) {
+          if (data['error'] != null) {
+            errorMessage = data['error'].toString();
+          } else if (data['message'] != null) {
+            errorMessage = data['message'].toString();
+          }
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ [Upload] خطأ: $e');
+      setState(() {
+        _isSubmitting = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Network error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
-
-    // ✅ إخفاء مؤشر التحميل
-    setState(() {
-      _isSubmitting = false;
-    });
-
-    // ✅ عرض رسالة نجاح
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Project submitted successfully! Waiting for trainer review.'),
-        backgroundColor: Colors.green,
-      ),
-    );
-
-    // ✅ تنظيف الحقول بعد الإرسال
-    _projectNameController.clear();
-    _courseNameController.clear();
-    _trainerNameController.clear();
-    setState(() {
-      _selectedImage = null;
-    });
-
-    // ✅ العودة إلى الصفحة السابقة
-    Navigator.pop(context);
   }
 
   // ============================================================
-  // 🎨 بناء واجهة المستخدم (UI)
+  // 🎨 بناء واجهة المستخدم
   // ============================================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // 🎨 شريط التطبيق العلوي (AppBar)
       appBar: AppBar(
         title: const Text(
           'Upload Project',
@@ -196,23 +302,22 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      // 👂 الاستماع لتغيرات حالة ProjectBloc (لإظهار رسائل النجاح/الخطأ)
-      body: BlocListener<ProjectBloc, ProjectState>(
+      body: BlocListener<CourseBloc, CourseState>(
         listener: (context, state) {
-          if (state is ProjectSubmitted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.green,
-              ),
-            );
-          } else if (state is ProjectError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
-            );
+          if (state is RegisteredCoursesLoaded) {
+            setState(() {
+              _registeredCourses = state.registeredCourses;
+              _isLoadingCourses = false;
+
+              // ✅ إذا لم يتم اختيار كورس مسبقاً وكان هناك كورسات، اختر الأول
+              if (_selectedCourseId == null && _registeredCourses.isNotEmpty) {
+                _selectedCourseId = int.tryParse(_registeredCourses.first.id);
+                _selectedCourseTitle = _registeredCourses.first.title;
+                if (_selectedCourseId != null) {
+                  _loadSessions(_selectedCourseId!);
+                }
+              }
+            });
           }
         },
         child: SingleChildScrollView(
@@ -220,6 +325,182 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ============================================================
+              // 📚 اختيار الكورس
+              // ============================================================
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.deepPurple.withOpacity(0.2)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.school, color: Colors.deepPurple, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'Select Course',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.deepPurple,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // ✅ قائمة منسدلة لاختيار الكورس
+                    if (_isLoadingCourses)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (_registeredCourses.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text(
+                          'No registered courses found. Please register for a course first.',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      )
+                    else
+                      DropdownButtonFormField<int>(
+                        value: _selectedCourseId,
+                        decoration: InputDecoration(
+                          hintText: 'Select a course',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        items: _registeredCourses.map((course) {
+                          return DropdownMenuItem<int>(
+                            value: int.tryParse(course.id),
+                            child: Text(course.title),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedCourseId = value;
+                            final selectedCourse = _registeredCourses.firstWhere(
+                                  (c) => int.tryParse(c.id) == value,
+                              orElse: () => _registeredCourses.first,
+                            );
+                            _selectedCourseTitle = selectedCourse.title;
+                          });
+                          if (value != null) {
+                            _loadSessions(value);
+                          }
+                        },
+                      ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // ============================================================
+              // 📚 اختيار الجلسة
+              // ============================================================
+              // ============================================================
+// 📚 اختيار الجلسة (Session Selection) - نسخة معدلة
+// ============================================================
+              if (_selectedCourseId != null)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.deepPurple.withOpacity(0.2)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.video_library, color: Colors.deepPurple, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'Select Session',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.deepPurple,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // ✅ قائمة منسدلة لاختيار الجلسة (مع تقليم النص)
+                      if (_isLoadingSessions)
+                        const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Center(child: CircularProgressIndicator()),
+                        )
+                      else if (_sessions.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Text(
+                            'No sessions available for this course.',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        )
+                      else
+                        Container(
+                          constraints: const BoxConstraints(maxHeight: 200),
+                          child: DropdownButtonFormField<int>(
+                            value: _selectedSessionId,
+                            isExpanded: true,
+                            hint: const Text('Select a session'),
+                            decoration: InputDecoration(
+                              hintText: 'Select a session',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            ),
+                            items: _sessions.map((session) {
+                              // ✅ تقليص النص الطويل
+                              String sessionText = 'Session ${session.sessionOrder ?? 0}: ${session.title}';
+                              if (sessionText.length > 45) {
+                                sessionText = sessionText.substring(0, 45) + '...';
+                              }
+                              return DropdownMenuItem<int>(
+                                value: session.id,
+                                child: SizedBox(
+                                  width: MediaQuery.of(context).size.width - 70,
+                                  child: Text(
+                                    sessionText,
+                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: false,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedSessionId = value;
+                                final selectedSession = _sessions.firstWhere(
+                                      (s) => s.id == value,
+                                  orElse: () => _sessions.first,
+                                );
+                                _selectedSessionOrder = selectedSession.sessionOrder;
+                              });
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+
+              const SizedBox(height: 20),
+
               // ============================================================
               // 📝 نموذج إدخال بيانات المشروع
               // ============================================================
@@ -234,7 +515,6 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 🏷️ عنوان القسم
                     const Row(
                       children: [
                         Icon(Icons.edit_note, color: Colors.deepPurple),
@@ -251,41 +531,17 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
                     ),
                     const SizedBox(height: 20),
 
-                    // ✅ حقل اسم المشروع (مطلوب)
+                    // ✅ حقل عنوان المشروع (title) - مطلوب
                     TextFormField(
-                      controller: _projectNameController,
+                      controller: _titleController,
                       decoration: InputDecoration(
-                        labelText: 'Project Name',
+                        labelText: 'Project Title *',
                         labelStyle: TextStyle(
                           color: Colors.grey,
                           fontSize: 14,
                         ),
+                        hintText: 'e.g., Final Dress Design',
                         prefixIcon: const Icon(Icons.title, color: Colors.deepPurple),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.deepPurple.withOpacity(0.2)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // ✅ حقل اسم الكورس (مطلوب)
-                    TextFormField(
-                      controller: _courseNameController,
-                      decoration: InputDecoration(
-                        labelText: 'Course Name',
-                        labelStyle: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 14,
-                        ),
-                        prefixIcon: const Icon(Icons.school, color: Colors.deepPurple),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -306,7 +562,7 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
               const SizedBox(height: 24),
 
               // ============================================================
-              // 📸 قسم رفع الصورة (تظهر كاملة بدون قص)
+              // 📸 قسم رفع الصورة
               // ============================================================
               Container(
                 padding: const EdgeInsets.all(20),
@@ -319,13 +575,12 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 🏷️ عنوان القسم
                     const Row(
                       children: [
                         Icon(Icons.image, color: Colors.deepPurple),
                         SizedBox(width: 10),
                         Text(
-                          'Project Image',
+                          'Project Image *',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -336,7 +591,7 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
                     ),
                     const SizedBox(height: 20),
 
-                    // ✅ أزرار اختيار الصورة (Gallery + Camera)
+                    // أزرار اختيار الصورة
                     Row(
                       children: [
                         Expanded(
@@ -375,7 +630,7 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
 
                     const SizedBox(height: 16),
 
-                    // ✅ عرض الصورة المختارة (تظهر كاملة بدون قص)
+                    // عرض الصورة المختارة
                     if (_selectedImage != null)
                       Container(
                         height: 250,
@@ -418,7 +673,7 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
 
                     const SizedBox(height: 16),
 
-                    // ✅ تنبيه بخصوص الصورة
+                    // تنبيه
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
@@ -431,7 +686,7 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Upload a clear image of your project work',
+                              'Upload a clear image of your project work (JPG, PNG)',
                               style: TextStyle(fontSize: 11, color: Colors.deepPurple),
                             ),
                           ),
@@ -444,9 +699,7 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
 
               const SizedBox(height: 35),
 
-              // ============================================================
-              // ✅ زر إرسال المشروع (SUBMIT )
-              // ============================================================
+              // زر الإرسال
               SizedBox(
                 width: double.infinity,
                 height: 55,
@@ -500,9 +753,9 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
                 ),
               ),
 
-              const SizedBox(height: 80),
+              const SizedBox(height: 20),
 
-              // ✅ ملاحظة حول عملية التسليم
+              // ملاحظة
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -516,7 +769,7 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Your project will be reviewed by the trainer. You will see the grade in your profile once reviewed.',
+                        'Your project will be reviewed by the trainer. You will see the evaluation in your profile once reviewed.',
                         style: TextStyle(fontSize: 12, color: Colors.blue),
                       ),
                     ),

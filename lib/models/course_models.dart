@@ -34,17 +34,18 @@ class CourseContent {
 
   // ✅ تحويل JSON (من الخادم) إلى كائن CourseContent
   factory CourseContent.fromJson(Map<String, dynamic> json) {
-    // 🔍 نطبع في الكونسول لنرى الرابط القادم من الخادم
+    // نطبع في الكونسول لنرى الرابط القادم من الخادم
     print('📄 [CourseContent] تحويل: ${json['title']}');
-    print('   📁 الرابط الخام: ${json['file'] ?? json['file_url']}');
 
-    // نحاول قراءة الرابط من عدة حقول محتملة
+    // محاولة قراءة الرابط من عدة حقول محتملة
     String? fileUrlValue;
     if (json['file'] != null && json['file'].toString().isNotEmpty) {
       fileUrlValue = json['file'].toString();
     } else if (json['file_url'] != null && json['file_url'].toString().isNotEmpty) {
       fileUrlValue = json['file_url'].toString();
     }
+
+    print('   📁 الرابط: $fileUrlValue');
 
     return CourseContent(
       id: json['id'] ?? 0,
@@ -54,19 +55,13 @@ class CourseContent {
       title: json['title'] ?? 'بدون عنوان',
       contentType: json['content_type'] ?? 'FILE',
       contentOrder: json['content_order'] ?? 0,
-      fileUrl: fileUrlValue,  // ✅ الرابط كما هو من الخادم
+      fileUrl: fileUrlValue,
     );
   }
 
-  // ✅ دوال مساعدة للواجهة (لتسهيل العرض)
-
-  // نوع المحتوى بأحرف صغيرة (مثلاً 'pdf' بدلاً من 'PDF')
+  // ✅ دوال مساعدة للواجهة
   String get type => contentType.toLowerCase();
-
-  // هل يوجد ملف حقيقي (الرابط ليس فارغاً)
   bool get hasFile => fileUrl != null && fileUrl!.isNotEmpty;
-
-  // مدة وهمية للعرض (حسب ترتيب المحتوى)
   String get duration => '${(contentOrder * 5).clamp(5, 60)} min';
 
   // ✅ أيقونة مناسبة حسب نوع المحتوى
@@ -89,20 +84,37 @@ class CourseContent {
     }
   }
 
-  // ✅ بناء الرابط الكامل (مع إضافة base URL إذا لزم الأمر)
+  // ✅ بناء الرابط الكامل (مع معالجة صحيحة لملفات الـ media)
   String get fullUrl {
     if (!hasFile) return '';
-    // إذا كان الرابط يبدأ بـ http أو https، نستخدمه كما هو
-    if (fileUrl!.startsWith('http')) return fileUrl!;
-    // وإلا نضيف الرابط الأساسي للخادم
-    return 'http://192.168.1.22:8000$fileUrl!';
+
+    // إذا كان الرابط كاملاً بالفعل (يبدأ بـ http)
+    if (fileUrl!.startsWith('http')) {
+      return fileUrl!;
+    }
+
+    // بناء الرابط الأساسي للسيرفر
+    const baseUrl = 'http://192.168.1.22:8000';
+
+    // التأكد من أن المسار يبدأ بـ /
+    String relativePath = fileUrl!;
+    if (!relativePath.startsWith('/')) {
+      relativePath = '/$relativePath';
+    }
+
+    // إذا كان المسار يبدأ بـ /media/، نضيفه مباشرة
+    if (relativePath.startsWith('/media/')) {
+      return '$baseUrl$relativePath';
+    }
+
+    // وإلا نضيف /media/ قبله (لأن الملفات في مجلد media)
+    return '$baseUrl/media$relativePath';
   }
 }
 
 // ============================================================
 // 📋 نموذج الدرس (Lesson) - للواجهة فقط
 // ============================================================
-// هذا نموذج مبسط للعرض في الواجهة
 
 class Lesson {
   final String id;           // معرف الدرس (نص)
@@ -128,7 +140,7 @@ class Lesson {
       title: content.title,
       duration: content.duration,
       type: content.type,
-      url: content.fullUrl,  // ✅ نستخدم الرابط الكامل هنا
+      url: content.fullUrl,
       isCompleted: false,
     );
   }
@@ -137,7 +149,6 @@ class Lesson {
 // ============================================================
 // 📋 نموذج الجلسة (Session)
 // ============================================================
-// يمثل جلسة واحدة داخل كورس (مثل "الأسبوع الأول")
 
 class Session {
   final int id;                    // معرف الجلسة
@@ -161,7 +172,6 @@ class Session {
 
   // ✅ تحويل JSON إلى كائن Session
   factory Session.fromJson(Map<String, dynamic> json) {
-    // نقرأ المحتويات إذا كانت موجودة في JSON
     final List<dynamic> contentsData = json['contents'] ?? json['course_content'] ?? [];
 
     return Session(
@@ -187,7 +197,6 @@ class Session {
 // ============================================================
 // 🎓 نموذج الكورس (CourseItem)
 // ============================================================
-// يمثل كورس كامل مع جميع بياناته
 
 class CourseItem {
   final String id;                 // معرف الكورس (نص)
@@ -227,13 +236,11 @@ class CourseItem {
   factory CourseItem.fromJson(Map<String, dynamic> json) {
     final List<dynamic> sessionsData = json['sessions'] ?? [];
 
-    // معالجة السعر (قد يكون رقماً أو نصاً)
     final priceValue = json['price'];
     final priceString = priceValue is num
         ? priceValue.toStringAsFixed(2)
         : (priceValue?.toString() ?? '0');
 
-    // معالجة اسم المدرب (قد يكون في أماكن مختلفة)
     String trainerName = '';
     if (json['trainer_full_name'] != null) {
       trainerName = json['trainer_full_name'];
@@ -273,26 +280,25 @@ class CourseItem {
   // ✅ إجمالي عدد الدروس في كل الجلسات
   int get totalLessons => sessions.fold(0, (sum, s) => sum + s.lessonsCount);
 
-  // ✅ ✅ ✅ دالة copyWith - لإنشاء نسخة جديدة من الكورس مع تعديل بعض الحقول
-  // هذه الدالة مهمة جداً لتحديث حالة التسجيل بدون تغيير باقي البيانات
+  // ✅ دالة copyWith - لإنشاء نسخة جديدة من الكورس مع تعديل بعض الحقول
   CourseItem copyWith({
-    String? id,                   // معرف الكورس
-    String? title,                // عنوان الكورس
-    String? description,          // وصف الكورس
-    int? levelNumber,             // رقم المستوى
-    String? courseType,           // نوع الكورس
-    String? price,                // السعر
-    String? toolsRequired,        // الأدوات المطلوبة
-    int? trainerProfile,          // معرف المدرب
-    String? trainerName,          // اسم المدرب
-    int? studentsCount,           // عدد الطلاب
-    String? totalHours,           // المدة الكلية
-    List<Session>? sessions,      // قائمة الجلسات
-    bool? isRegistered,           // حالة التسجيل (الأهم)
-    int? progress,                // نسبة التقدم
+    String? id,
+    String? title,
+    String? description,
+    int? levelNumber,
+    String? courseType,
+    String? price,
+    String? toolsRequired,
+    int? trainerProfile,
+    String? trainerName,
+    int? studentsCount,
+    String? totalHours,
+    List<Session>? sessions,
+    bool? isRegistered,
+    int? progress,
   }) {
     return CourseItem(
-      id: id ?? this.id,                    // إذا لم يتم تمرير قيمة جديدة، استخدم القديمة
+      id: id ?? this.id,
       title: title ?? this.title,
       description: description ?? this.description,
       levelNumber: levelNumber ?? this.levelNumber,
@@ -304,7 +310,7 @@ class CourseItem {
       studentsCount: studentsCount ?? this.studentsCount,
       totalHours: totalHours ?? this.totalHours,
       sessions: sessions ?? this.sessions,
-      isRegistered: isRegistered ?? this.isRegistered,  // ✅ نعدل حالة التسجيل فقط
+      isRegistered: isRegistered ?? this.isRegistered,
       progress: progress ?? this.progress,
     );
   }

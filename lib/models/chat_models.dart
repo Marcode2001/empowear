@@ -1,4 +1,8 @@
-// lib/models/chat_models.dart
+// 📄 lib/models/chat_models.dart
+// ============================================================
+// 💬 نماذج بيانات المحادثات - متوافقة مع API
+// ============================================================
+
 import 'package:flutter/material.dart';
 
 // ============================================================
@@ -15,7 +19,7 @@ class ChatMessage {
   final DateTime timestamp;
   final bool isRead;
   final String? imageUrl;
-  final String? courseId;  // ✅ أضفنا courseId
+  final String? courseId;
 
   ChatMessage({
     required this.id,
@@ -34,15 +38,15 @@ class ChatMessage {
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
     return ChatMessage(
       id: json['id']?.toString() ?? '',
-      conversationId: json['conversation_id']?.toString() ?? '',
-      senderId: json['sender_id']?.toString() ?? '',
-      senderName: json['sender_name'] ?? '',
-      receiverId: json['receiver_id']?.toString() ?? '',
-      receiverName: json['receiver_name'] ?? '',
-      message: json['message'] ?? '',
-      timestamp: json['timestamp'] != null
-          ? DateTime.parse(json['timestamp'])
-          : DateTime.now(),
+      conversationId: json['conversation_id']?.toString() ?? json['conversation']?.toString() ?? '',
+      senderId: json['sender_id']?.toString() ?? json['sender']?.toString() ?? '',
+      senderName: json['sender_name'] ?? json['senderName'] ?? '',
+      receiverId: json['receiver_id']?.toString() ?? json['receiver']?.toString() ?? '',
+      receiverName: json['receiver_name'] ?? json['receiverName'] ?? '',
+      message: json['content'] ?? json['message'] ?? '',
+      timestamp: json['sent_at'] != null
+          ? DateTime.parse(json['sent_at'])
+          : (json['timestamp'] != null ? DateTime.parse(json['timestamp']) : DateTime.now()),
       isRead: json['is_read'] ?? false,
       imageUrl: json['image_url'],
       courseId: json['course_id']?.toString(),
@@ -109,9 +113,9 @@ class ChatConversation {
       relatedCourse: json['related_course'] ?? 0,
       courseTitle: json['course_title'] ?? '',
       trainerProfile: json['trainer_profile'] ?? 0,
-      trainerName: json['trainer_name'],
+      trainerName: json['trainer_full_name'] ?? json['trainer_name'],
       traineeProfile: json['trainee_profile'] ?? 0,
-      traineeName: json['trainee_name'],
+      traineeName: json['trainee_full_name'] ?? json['trainee_name'],
       lastMessage: json['last_message'] ?? '',
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'])
@@ -134,18 +138,4 @@ class ChatConversation {
       'unread_count': unreadCount,
     };
   }
-
-  // ✅ Constructor للبيانات التجريبية
-  ChatConversation.forSample({
-    required this.id,
-    required this.relatedCourse,
-    required this.courseTitle,
-    required this.trainerProfile,
-    this.trainerName,
-    required this.traineeProfile,
-    this.traineeName,
-    required this.lastMessage,
-    required this.updatedAt,
-    this.unreadCount = 0,
-  });
 }

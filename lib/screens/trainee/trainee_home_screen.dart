@@ -148,10 +148,11 @@ class _HomePageState extends State<HomePage> {
 
       // ✅ إذا الطالب مسجل دخول (مستخدم مصادق عليه)
       if (authState is AuthAuthenticated) {
-        // 🚀 نرسل حدث تحميل الكورسات المسجل فيها
-        // الـ BLoC رح يتصل بالباك إند ويجيب قائمة الكورسات
         context.read<CourseBloc>().add(
-          LoadRegisteredCoursesEvent(userId: authState.user.id),
+          LoadRegisteredCoursesEvent(
+            userId: authState.user.id,
+            userType: authState.user.userType,  // ✅ أضيفي هذا السطر
+          ),
         );
       }
     });
@@ -171,6 +172,7 @@ class _HomePageState extends State<HomePage> {
         RegisterCourseEvent(
           course: course,
           userId: authState.user.id,
+          userType: authState.user.userType,
         ),
       );
     }
@@ -189,6 +191,7 @@ class _HomePageState extends State<HomePage> {
         UnregisterCourseEvent(
           courseId: courseId,
           userId: authState.user.id,
+          userType: authState.user.userType,
         ),
       );
     }

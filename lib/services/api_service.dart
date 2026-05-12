@@ -233,6 +233,17 @@ class ApiService {
     }
   }
 
+  // 📄 lib/services/api_service.dart
+// أضف هذه الدالة داخل class ApiService
+
+  static Future<void> handleTokenExpired() async {
+    print('🚪 [API] Token expired - logging out...');
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('access_token');
+    await prefs.remove('refresh_token');
+    // يمكنك إضافة حدث لتوجيه المستخدم لشاشة تسجيل الدخول
+  }
+
   // ============================================================
   // 🔄 معالجة الرد من الخادم (نسخة معدلة مع تصحيح)
   // ============================================================
@@ -326,36 +337,32 @@ class ApiService {
     required String endpoint,
     required Map<String, String> fields,
     String? filePath,
-    String fileFieldName = 'file',
+    String fileFieldName = 'image',  // ✅ تأكد أن اسم الحقل 'image' وليس 'file'
   }) async {
     try {
       final uri = Uri.parse('$baseUrl/$endpoint');
       final request = http.MultipartRequest('POST', uri);
 
-      // إضافة التوكن للهيدر
       final token = await getToken();
       request.headers['Accept'] = 'application/json';
       if (token != null) {
         request.headers['Authorization'] = 'Bearer $token';
       }
 
-      // إضافة الحقول النصية
       request.fields.addAll(fields);
 
-      // إضافة الملف إذا وجد
       if (filePath != null && filePath.isNotEmpty) {
         final file = await http.MultipartFile.fromPath(fileFieldName, filePath);
         request.files.add(file);
-        print('📎 [API] Attached file: $filePath');
+        print('📎 Attached file: $filePath');
       }
 
-      // إرسال الطلب
-      print('🌐 [API] POST Multipart to: $uri');
       final streamedResponse = await request.send();
       final responseBody = await streamedResponse.stream.bytesToString();
       final decoded = json.decode(responseBody);
 
-      print('📊 [API] Multipart Response Status: ${streamedResponse.statusCode}');
+      // ✅ طباعة الاستجابة كاملة للتصحيح
+      print('📊 Response: $responseBody');
 
       return {
         'success': streamedResponse.statusCode >= 200 && streamedResponse.statusCode < 300,
@@ -363,10 +370,10 @@ class ApiService {
         'statusCode': streamedResponse.statusCode,
       };
     } catch (e) {
-      print('❌ [API] فشل رفع الملف: $e');
+      print('❌ Upload error: $e');
       return {
         'success': false,
-        'message': 'فشل رفع الملف: $e',
+        'message': 'Upload failed: $e',
       };
     }
   }

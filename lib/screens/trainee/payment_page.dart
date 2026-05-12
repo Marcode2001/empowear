@@ -185,8 +185,8 @@ class _PaymentPageState extends State<PaymentPage> {
         // ✅ تحديث قائمة الكورسات
         final authState = context.read<AuthBloc>().state;
         if (authState is AuthAuthenticated) {
-          context.read<CourseBloc>().add(LoadRegisteredCoursesEvent(userId: authState.user.id));
-          context.read<CourseBloc>().add(LoadAvailableCoursesEvent(userId: authState.user.id));
+          context.read<CourseBloc>().add(LoadRegisteredCoursesEvent(userId: authState.user.id , userType: authState.user.userType,));
+          context.read<CourseBloc>().add(LoadAvailableCoursesEvent(userId: authState.user.id , userType: authState.user.userType,));
         }
 
         widget.onPaymentSuccess();

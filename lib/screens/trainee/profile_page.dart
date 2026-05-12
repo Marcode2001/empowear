@@ -1,8 +1,6 @@
 // 📄 lib/screens/trainee/profile_page.dart
 // ============================================================
-// 👤 Trainee Profile Page - Updated & Enhanced
-// ✅ Pull-to-refresh for applications + Auto status updates
-// ✅ Projects fetched from Backend (ProjectBloc)
+// 👤 Trainee Profile Page - مع تسجيل خروج يعمل بشكل صحيح
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -14,7 +12,6 @@ import '../../bloc/job/job_state.dart';
 import '../../bloc/project/project_bloc.dart';
 import '../../models/job_models.dart';
 import '../../models/project_models.dart';
-import '../auth/login_screen.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -49,6 +46,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (mounted) setState(() => _isRefreshingProjects = false);
   }
 
+  // ✅ دالة تسجيل الخروج المعدلة
   Future<void> _logout() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -73,14 +71,30 @@ class _ProfilePageState extends State<ProfilePage> {
     if (confirm == true && mounted) {
       setState(() => _isLoading = true);
       try {
+        // ✅ إرسال حدث تسجيل الخروج
         context.read<AuthBloc>().add(const LogoutEvent());
+
+        // ✅ عرض رسالة نجاح
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Logged out successfully'), backgroundColor: Colors.green),
         );
+
+        // ✅ انتظار قليل ثم العودة إلى شاشة تسجيل الدخول
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        if (mounted) {
+          // ✅ إزالة جميع الشاشات والانتقال إلى شاشة تسجيل الدخول
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/login',
+                (route) => false,
+          );
+        }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+          );
+        }
       } finally {
         if (mounted) setState(() => _isLoading = false);
       }
@@ -93,9 +107,23 @@ class _ProfilePageState extends State<ProfilePage> {
       builder: (context, state) {
         String userName = 'Student';
         String userId = '';
+
         if (state is AuthAuthenticated) {
           userName = state.user.name;
           userId = state.user.id;
+        }
+
+        // ✅ إذا لم يكن المستخدم مسجلاً، اخرج من هذه الشاشة
+        if (state is AuthUnauthenticated) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                '/login',
+                    (route) => false,
+              );
+            }
+          });
+          return const SizedBox.shrink();
         }
 
         return Scaffold(
@@ -152,7 +180,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               radius: 41,
                               backgroundColor: Colors.deepPurple,
                               child: Text(
-                                userName.isNotEmpty ? userName[0].toUpperCase() : 'M',
+                                userName.isNotEmpty ? userName[0].toUpperCase() : 'S',
                                 style: const TextStyle(fontSize: 38, fontWeight: FontWeight.bold, color: Colors.white),
                               ),
                             ),
@@ -188,7 +216,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 padding: const EdgeInsets.all(16),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    // 📁 Submitted Projects Section (from ProjectBloc)
+                    // 📁 Submitted Projects Section
                     const Text('Submitted Projects', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
                     _SubmittedProjectsSection(userId: userId, onRefresh: _onRefreshProjects),
@@ -244,7 +272,7 @@ class _ProfilePageState extends State<ProfilePage> {
 }
 
 // ============================================================
-// 📁 Submitted Projects Section (from ProjectBloc)
+// 📁 Submitted Projects Section (يبقى كما هو)
 // ============================================================
 
 class _SubmittedProjectsSection extends StatefulWidget {
@@ -295,7 +323,6 @@ class _SubmittedProjectsSectionState extends State<_SubmittedProjectsSection> {
             );
           }
 
-          // عرض أول 3 مشاريع فقط في الصفحة الرئيسية
           final displayProjects = projects.take(3).toList();
 
           return RefreshIndicator(
@@ -354,7 +381,6 @@ class _SubmittedProjectsSectionState extends State<_SubmittedProjectsSection> {
   }
 
   Widget _buildProjectCard(StudentProject project) {
-    // تحديد حالة المشروع
     Color statusColor;
     IconData statusIcon;
     String statusText;
@@ -397,7 +423,6 @@ class _SubmittedProjectsSectionState extends State<_SubmittedProjectsSection> {
       ),
       child: Row(
         children: [
-          // أيقونة المشروع
           Container(
             width: 50,
             height: 50,
@@ -408,8 +433,6 @@ class _SubmittedProjectsSectionState extends State<_SubmittedProjectsSection> {
             child: const Center(child: Icon(Icons.folder, color: Colors.white, size: 28)),
           ),
           const SizedBox(width: 12),
-
-          // معلومات المشروع
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -441,8 +464,6 @@ class _SubmittedProjectsSectionState extends State<_SubmittedProjectsSection> {
               ],
             ),
           ),
-
-          // شارة الحالة
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
@@ -472,7 +493,7 @@ class _SubmittedProjectsSectionState extends State<_SubmittedProjectsSection> {
 }
 
 // ============================================================
-// 💼 My Applications Section
+// 💼 My Applications Section (يبقى كما هو)
 // ============================================================
 
 class _MyApplicationsSection extends StatefulWidget {
@@ -674,7 +695,7 @@ class _MyApplicationsSectionState extends State<_MyApplicationsSection> {
 }
 
 // ============================================================
-// 📄 All Projects Page
+// 📄 All Projects Page (يبقى كما هو)
 // ============================================================
 
 class AllProjectsPage extends StatelessWidget {

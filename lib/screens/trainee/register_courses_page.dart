@@ -1,6 +1,7 @@
 // 📄 lib/screens/trainee/register_courses_page.dart
 // ============================================================
 // 📝 صفحة تسجيل الكورسات (Register Courses Page)
+// ✅ بدون زر Unregister - بعد الدفع لا يمكن إلغاء التسجيل
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -34,6 +35,7 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
   List<CourseItem> availableCourses = [];
   List<String> registeredIds = [];
   bool _isLoading = true;
+  bool _isProcessing = false;
 
   String? _expandedCourseId;
   int? _expandedSessionId;
@@ -53,7 +55,7 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
     final authState = context.read<AuthBloc>().state;
     if (authState is AuthAuthenticated) {
       context.read<CourseBloc>().add(
-        LoadAvailableCoursesEvent(userId: authState.user.id),
+        LoadAvailableCoursesEvent(userId: authState.user.id , userType: authState.user.userType,),
       );
     }
   }
@@ -63,69 +65,7 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
   }
 
   // ============================================================
-  // ✅ دالة إلغاء التسجيل المعدلة - تمنع الدائرة التي لا تتوقف
-  // ============================================================
-  void _unregisterCourse(CourseItem course) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Unregister Course'),
-        content: Text('Are you sure you want to unregister from "${course.title}"?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Unregister'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      // ✅ إظهار رسالة انتظار قصيرة
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unregistering...'), duration: Duration(seconds: 1)),
-      );
-
-      final authState = context.read<AuthBloc>().state;
-      if (authState is AuthAuthenticated) {
-        // ✅ استخدام Repository مباشرة بدلاً من BLoC لتجنب التأخير
-        final success = await CourseRepository().unregisterCourse(authState.user.id, course.id);
-
-        if (success) {
-          // ✅ تحديث الواجهة محلياً
-          setState(() {
-            registeredIds.remove(course.id);
-            _cachedSessions.remove(course.id);
-
-            // ✅ تحديث الكورس في القائمة باستخدام copyWith
-            final index = availableCourses.indexWhere((c) => c.id == course.id);
-            if (index != -1) {
-              final updatedCourse = availableCourses[index].copyWith(isRegistered: false);
-              availableCourses[index] = updatedCourse;
-            }
-          });
-
-          if (widget.onUnregister != null) {
-            widget.onUnregister!(course.id);
-          }
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Unregistered from "${course.title}" successfully'), backgroundColor: Colors.orange),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to unregister. Please try again.'), backgroundColor: Colors.red),
-          );
-        }
-      }
-    }
-  }
-
-  // ============================================================
-  // ✅ دالة التوجه للدفع المعدلة - لا تسبب اختفاء الكورسات
+  // ✅ دالة التسجيل فقط - بدون إلغاء تسجيل
   // ============================================================
   void _proceedToPayment(CourseItem course) {
     if (_isCourseRegistered(course.id)) {
@@ -135,21 +75,22 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
       return;
     }
 
+    if (_isProcessing) return;
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => PaymentPage(
           course: course,
           onPaymentSuccess: () {
-            // ✅ فقط نضيف الكورس للقائمة المحلية - لا نعيد تحميل أي شيء من API
+            // ✅ تحديث محلي فقط - بدون إعادة تحميل من API
             setState(() {
               registeredIds.add(course.id);
 
-              // ✅ تحديث الكورس في القائمة باستخدام copyWith
+              // ✅ تحديث حالة الكورس في القائمة
               final index = availableCourses.indexWhere((c) => c.id == course.id);
               if (index != -1) {
-                final updatedCourse = availableCourses[index].copyWith(isRegistered: true);
-                availableCourses[index] = updatedCourse;
+                availableCourses[index] = availableCourses[index].copyWith(isRegistered: true);
               }
             });
 
@@ -160,8 +101,6 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Course registered successfully! 🎉'), backgroundColor: Colors.green),
             );
-
-            Navigator.pop(context);
           },
         ),
       ),
@@ -214,10 +153,10 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
       ),
       body: BlocListener<CourseBloc, CourseState>(
         listener: (context, state) {
-          if (state is AvailableCoursesLoaded) {
+          if (state is AvailableCoursesLoaded && !_isProcessing) {
             setState(() {
               availableCourses = state.availableCourses;
-              // ✅ مزامنة registeredIds مع الكورسات المستلمة
+              // مزامنة registeredIds مع الكورسات المستلمة
               for (var course in availableCourses) {
                 if (course.isRegistered && !registeredIds.contains(course.id)) {
                   registeredIds.add(course.id);
@@ -314,20 +253,20 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
                     ],
                   ),
                 ),
+                // ✅ زر التسجيل فقط - بدون زر إلغاء التسجيل
+                // إذا كان مسجلاً: يظهر نص "Enrolled" (غير قابل للضغط)
+                // إذا كان غير مسجل: يظهر زر "Register" (قابل للضغط)
                 if (isRegistered)
-                  GestureDetector(
-                    onTap: () => _unregisterCourse(course),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(20)),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.check, size: 14, color: Colors.white),
-                          SizedBox(width: 4),
-                          Text('Enrolled', style: TextStyle(fontSize: 11, color: Colors.white)),
-                        ],
-                      ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(20)),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check, size: 14, color: Colors.white),
+                        SizedBox(width: 4),
+                        Text('Registered', style: TextStyle(fontSize: 11, color: Colors.white)),
+                      ],
                     ),
                   )
                 else
@@ -635,13 +574,18 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
           IconButton(
             icon: const Icon(Icons.open_in_new, size: 18, color: Colors.deepPurple),
             onPressed: () {
-              // ✅ فتح صفحة عرض المحتوى
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ContentViewerPage(content: content),
-                ),
-              );
+              if (content.hasFile) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ContentViewerPage(content: content),
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('No file available for this content'), backgroundColor: Colors.orange),
+                );
+              }
             },
           ),
         ],

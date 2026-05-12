@@ -26,11 +26,22 @@ class User {
 
   // ✅ دالة لتحويل بيانات الـ JSON القادمة من الباك إند إلى كائن User
   factory User.fromJson(Map<String, dynamic> json) {
+    // 🔍 طباعة للتصحيح
+    print('👤 [User.fromJson] Raw JSON: $json');
+
+    // ✅ استخراج الدور بشكل صحيح
+    String? role = json['role']?.toString().toLowerCase();
+    if (role == null || role.isEmpty) {
+      role = json['user_type']?.toString().toLowerCase();
+    }
+
+    print('👤 [User.fromJson] Extracted role: $role');
+
     return User(
       id: json['id']?.toString() ?? json['user_id']?.toString() ?? '',
       name: json['full_name'] ?? json['username'] ?? json['name'] ?? '',
       email: json['email'] ?? '',
-      userType: _parseUserType(json['role'] ?? json['user_type']),
+      userType: _parseUserType(role),
       phone: json['phone_number'] ?? json['phone'] ?? '',
       bio: json['location'] ?? json['bio'] ?? '',
       profileImage: json['profile_image'] ?? json['profileImage'] ?? '',
@@ -39,12 +50,26 @@ class User {
 
   // ✅ دالة مساعدة لتحويل نص الـ Role إلى Enum
   static UserType _parseUserType(String? role) {
-    if (role == null) return UserType.trainee;
+    print('👤 [_parseUserType] Parsing role: "$role"');
+
+    if (role == null || role.isEmpty) {
+      print('👤 [_parseUserType] Role is null or empty, defaulting to trainee');
+      return UserType.trainee;
+    }
+
     switch (role.toLowerCase()) {
-      case 'admin': return UserType.admin;
-      case 'trainer': return UserType.trainer;
-      case 'trainee': return UserType.trainee;
-      default: return UserType.unknown;
+      case 'admin':
+        print('👤 [_parseUserType] -> admin');
+        return UserType.admin;
+      case 'trainer':
+        print('👤 [_parseUserType] -> trainer');
+        return UserType.trainer;
+      case 'trainee':
+        print('👤 [_parseUserType] -> trainee');
+        return UserType.trainee;
+      default:
+        print('👤 [_parseUserType] Unknown role: "$role", defaulting to trainee');
+        return UserType.trainee;
     }
   }
 
