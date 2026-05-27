@@ -33,23 +33,45 @@ class CourseBloc extends Bloc<CourseEvent, CourseState> {
       LoadRegisteredCoursesEvent event,
       Emitter<CourseState> emit,
       ) async {
-
-    emit(const CourseLoading());
-
     try {
-      // ✅ نستخدم الدالة الموجودة مع فصل المنطق حسب النوع
-      final courses = await _courseRepository.loadRegisteredCourses(event.userId);
-      final progressData = await _courseRepository.calculateOverallProgress(event.userId);
+      // 🧠 لا تمسح البيانات القديمة
+      final currentState = state;
+
+      List<CourseItem> oldCourses = [];
+
+      if (currentState is RegisteredCoursesLoaded) {
+        oldCourses = currentState.registeredCourses;
+      }
+
+      // ⚡ عرض سريع بدون تفريغ UI
+      emit(RegisteredCoursesLoaded(
+        registeredCourses: oldCourses,
+        overallProgress: currentState is RegisteredCoursesLoaded
+            ? currentState.overallProgress
+            : 0,
+        totalLessonsCompleted: currentState is RegisteredCoursesLoaded
+            ? currentState.totalLessonsCompleted
+            : 0,
+        totalLessons: currentState is RegisteredCoursesLoaded
+            ? currentState.totalLessons
+            : 0,
+      ));
+
+      // 🔄 fetch الحقيقي
+      final courses =
+      await _courseRepository.loadRegisteredCourses(event.userId);
+
+      final progress =
+      await _courseRepository.calculateOverallProgress(event.userId);
 
       emit(RegisteredCoursesLoaded(
         registeredCourses: courses,
-        overallProgress: progressData['overallProgress'] ?? 0.0,
-        totalLessonsCompleted: progressData['completedLessons'] ?? 0,
-        totalLessons: progressData['totalLessons'] ?? 0,
+        overallProgress: progress['overallProgress'] ?? 0.0,
+        totalLessonsCompleted: progress['completedLessons'] ?? 0,
+        totalLessons: progress['totalLessons'] ?? 0,
       ));
-
     } catch (e) {
-      emit(CourseError(message: 'فشل جلب الكورسات: ${e.toString()}'));
+      emit(CourseError(message: e.toString()));
     }
   }
 
@@ -59,7 +81,18 @@ class CourseBloc extends Bloc<CourseEvent, CourseState> {
       Emitter<CourseState> emit,
       ) async {
 
-    emit(const CourseLoading());
+    /// ✅ إذا في بيانات قديمة لا تمسحيها
+    if (state is RegisteredCoursesLoaded) {
+
+      emit(CourseRefreshing(
+        currentCourses:
+        (state as RegisteredCoursesLoaded).registeredCourses,
+      ));
+
+    } else {
+
+      emit(const CourseLoading());
+    }
 
     try {
       // ✅ نستخدم الدالة الموجودة مع فصل المنطق

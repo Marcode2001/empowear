@@ -10,6 +10,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import '../../repositories/ai_repository.dart';
 
 class AIMaterialCheckerPage extends StatefulWidget {
   const AIMaterialCheckerPage({super.key});
@@ -24,6 +25,10 @@ class _AIMaterialCheckerPageState extends State<AIMaterialCheckerPage> {
   bool _isLoading = false;
   String? _fabricType;
   String? _generatedResult;
+  // ============================================================
+  // 🤖 AI Repository (🔴 هذا هو الربط مع الباك اند)
+  // ============================================================
+  final AIRepository _aiRepository = AIRepository();
 
   // ✅ اختيار صورة من المعرض
   Future<void> _pickImage() async {
@@ -53,15 +58,7 @@ class _AIMaterialCheckerPageState extends State<AIMaterialCheckerPage> {
 
   // ✅ تحليل القماش
   Future<void> _analyzeMaterial() async {
-    if (_selectedImage == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please upload a fabric or material image'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
+    if (_selectedImage == null) return;
 
     setState(() {
       _isLoading = true;
@@ -69,39 +66,53 @@ class _AIMaterialCheckerPageState extends State<AIMaterialCheckerPage> {
       _fabricType = null;
     });
 
-    // محاكاة وقت معالجة الـ AI
-    await Future.delayed(const Duration(seconds: 2));
-
-    // ✅ قائمة أنواع الأقمشة (للتجربة)
-    final List<String> fabricTypes = [
-      'Cotton',
-      'Linen',
-      'Wool',
-      'Silk',
-      'Polyester',
-      'Denim',
-      'Leather',
-      'Velvet',
-      'Cashmere',
-      'Rayon',
-    ];
-
-    // اختيار نوع قماش عشوائي
-    final randomIndex = DateTime.now().millisecondsSinceEpoch % fabricTypes.length;
-    _fabricType = fabricTypes[randomIndex.toInt()];
-
-    setState(() {
-      _generatedResult = '✅ Material Analysis Complete!';
-      _isLoading = false;
-    });
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Material analysis completed!'),
-          backgroundColor: Colors.green,
-        ),
+    try {
+      final response = await _aiRepository.analyzeFabricWithYOLO(
+        traineeId: 1,
+        imagePath: _selectedImage!.path,
       );
+
+      print("📦 RESPONSE: $response");
+
+      final outerData = response['data'];
+
+      if (outerData == null) {
+        setState(() {
+          _isLoading = false;
+          _generatedResult = "No response from server";
+        });
+        return;
+      }
+
+      final inner = outerData['data'];
+
+      if (inner == null) {
+        setState(() {
+          _isLoading = false;
+          _generatedResult = "Invalid API structure";
+        });
+        return;
+      }
+
+      final prediction = inner['prediction'] ?? 'Unknown';
+      final confidence = inner['confidence'] ?? 0.0;
+      final top3 = inner['top3'] ?? [];
+
+      setState(() {
+        // 🔥 أهم سطرين
+        _fabricType = prediction;
+
+        _generatedResult =
+        "Prediction: $prediction\nConfidence: ${(confidence * 100).toStringAsFixed(1)}%";
+
+        _isLoading = false;
+      });
+
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _generatedResult = "Error: $e";
+      });
     }
   }
 

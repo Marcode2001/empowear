@@ -93,17 +93,33 @@ class _TraineeHomeScreenState extends State<TraineeHomeScreen> {
 
       // 🖼️ جسم الشاشة: يعرض الصفحة المختارة من القائمة _screens
       // عندما يتغير _selectedIndex، فلاتر يعيد بناء هذا الجزء ويعرض الصفحة الجديدة
-      body: _screens[_selectedIndex],
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _screens,
+      ),
 
       // 🧭 شريط التنقل السفلي (BottomNavigationBar)
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,  // ثابت لعرض 4 عناصر (بدون انكماش)
         currentIndex: _selectedIndex,  // العنصر النشط حالياً (يتغير عند الضغط)
         onTap: (index) {
-          // ✅ عند الضغط على أي أيقونة، نحدث _selectedIndex ونعيد بناء الواجهة
           setState(() {
-            _selectedIndex = index;  // نغير الصفحة المختارة
+            _selectedIndex = index;
           });
+
+          // 🧠 إعادة تحميل الكورسات كل مرة نرجع فيها للهوم
+          if (index == 0) {
+            final authState = context.read<AuthBloc>().state;
+
+            if (authState is AuthAuthenticated) {
+              context.read<CourseBloc>().add(
+                LoadRegisteredCoursesEvent(
+                  userId: authState.user.id,
+                  userType: authState.user.userType,
+                ),
+              );
+            }
+          }
         },
         selectedItemColor: Colors.deepPurple,  // لون العنصر النشط (أيقونة + نص)
         unselectedItemColor: Colors.grey,      // لون العناصر غير النشطة
@@ -132,30 +148,35 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  List<CourseItem> _cachedCourses = [];
   // ✅ ملاحظة هامة: ما نحتاج متغير محلي للكورسات هنا
   // لأننا بنستخدم الـ State مباشرة من CourseBloc عبر BlocBuilder
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
 
-    // ⏱️ ننتظر حتى تنتهي عملية بناء الـ Widget الأولي
-    // ثم نرسل حدث تحميل الكورسات للـ BLoC
-    // هذا يضمن إن الـ context جاهز قبل ما ننادي الـ BLoC
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // ✅ نحصل على حالة المصادقة لمعرفة معرف الطالب
-      final authState = context.read<AuthBloc>().state;
+    // ✅ نجيب حالة المستخدم الحالية
+    final authState = context.read<AuthBloc>().state;
 
-      // ✅ إذا الطالب مسجل دخول (مستخدم مصادق عليه)
-      if (authState is AuthAuthenticated) {
-        context.read<CourseBloc>().add(
-          LoadRegisteredCoursesEvent(
-            userId: authState.user.id,
-            userType: authState.user.userType,  // ✅ أضيفي هذا السطر
-          ),
-        );
-      }
-    });
+    // ✅ نجيب حالة الكورسات الحالية
+    final courseState = context.read<CourseBloc>().state;
+
+    // ✅ إذا المستخدم مسجل دخول
+    // والكورسات لسا مو محملة
+    if (authState is AuthAuthenticated &&
+        courseState is! RegisteredCoursesLoaded &&
+        courseState is! CourseLoading) {
+
+      print('🚀 HOME PAGE → Loading registered courses...');
+
+      context.read<CourseBloc>().add(
+        LoadRegisteredCoursesEvent(
+          userId: authState.user.id,
+          userType: authState.user.userType,
+        ),
+      );
+    }
   }
 
   // ============================================================
@@ -214,9 +235,16 @@ class _HomePageState extends State<HomePage> {
 
         // ✅ استخراج قائمة الكورسات من الـ State مباشرة
         // إذا كانت الحالة RegisteredCoursesLoaded، نأخذ القائمة، وإلا نأخذ قائمة فاضية
-        final registeredCourses = (courseState is RegisteredCoursesLoaded)
-            ? courseState.registeredCourses  // نأخذ القائمة من الحالة
-            : <CourseItem>[];  // قائمة فاضية إذا الحالة مو ناجحة بعد
+        /// ✅ منع اختفاء الكورسات عند أي rebuild أو loading
+        List<CourseItem> registeredCourses = _cachedCourses;
+
+        /// ✅ إذا وصلت بيانات جديدة نخزنها
+        if (courseState is RegisteredCoursesLoaded) {
+
+          _cachedCourses = courseState.registeredCourses;
+
+          registeredCourses = courseState.registeredCourses;
+        }  // قائمة فاضية إذا الحالة مو ناجحة بعد
 
         return SingleChildScrollView(  // 📜 للسماح بالتمرير إذا المحتوى أطول من الشاشة
           padding: const EdgeInsets.all(16),  // هوامش داخلية حول كل المحتوى

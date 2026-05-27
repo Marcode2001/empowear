@@ -27,16 +27,47 @@ class ProjectRepository {
   }
 
   // 📥 تحميل مشاريع الطالب الخاصة به = الـ Submissions
+  // 📥 تحميل مشاريع الطالب الخاصة به
   Future<List<StudentProject>> loadMyProjects(String studentId) async {
+
+    // ✅ استدعاء الـ API
     final response = await ApiService.get(
       endpoint: 'design-submission/trainee-my-submissions/',
       requireAuth: true,
     );
 
+    // ✅ طباعة الداتا حتى نشوف شو عم يرجع السيرفر
+    print('📥 [PROJECTS API] Response: ${response['data']}');
+
+    // ✅ إذا الطلب نجح
     if (response['success']) {
-      final List<dynamic> data = response['data'] ?? [];
-      return data.map((json) => StudentProject.fromJson(json)).toList();
+
+      // ✅ تخزين الداتا
+      final data = response['data'];
+
+      // ======================================================
+      // ✅ إذا الـ API رجع List مباشرة
+      // ======================================================
+      if (data is List) {
+        return data
+            .map((json) => StudentProject.fromJson(json))
+            .toList();
+      }
+
+      // ======================================================
+      // ✅ إذا الـ API رجع Map وفيه results
+      // ======================================================
+      if (data is Map<String, dynamic>) {
+
+        final List<dynamic> results = data['results'] ?? [];
+
+        return results
+            .map((json) => StudentProject.fromJson(json))
+            .toList();
+      }
     }
+
+    // ❌ إذا فشل الطلب
     return [];
   }
 
@@ -82,8 +113,15 @@ class ProjectRepository {
     required double grade,
     required String feedback,
   }) async {
-    // تحويل الـ grade إلى حرف (A+, A, B+, etc.)
+
     String gradeLetter = _gradeToLetter(grade);
+
+    // ✅ طباعة البيانات المرسلة
+    print('📤 [GRADE API] Sending grade...');
+    print({
+      'design_submission': int.parse(submissionId),
+      'grade_letter': gradeLetter,
+    });
 
     final response = await ApiService.post(
       endpoint: 'design-evaluation/trainer-create/',
@@ -93,6 +131,10 @@ class ProjectRepository {
       },
       requireAuth: true,
     );
+
+    // ✅ طباعة الرد
+    print('📥 [GRADE API] Response: $response');
+
     return response['success'];
   }
 

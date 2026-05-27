@@ -2,15 +2,12 @@
 // ============================================================
 // 🎨 صفحة توليد تصاميم الأزياء بالذكاء الاصطناعي
 // ============================================================
-// الوظيفة: تحويل الرسمات إلى تصاميم 3D
-// - إدخال الفصل (مطلوب)
-// - إدخال وصف (اختياري)
-// - رفع صورة (اختياري)
-// - توليد نتيجة (نصية أو 3D)
 
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:model_viewer_plus/model_viewer_plus.dart';
+import '../../repositories/ai_repository.dart';
 
 class AIDesignGeneratorPage extends StatefulWidget {
   const AIDesignGeneratorPage({super.key});
@@ -20,11 +17,14 @@ class AIDesignGeneratorPage extends StatefulWidget {
 }
 
 class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
+  final AIRepository _aiRepository = AIRepository();
+
   // ✅ متغيرات الحالة
   File? _selectedImage;
   bool _isLoading = false;
   String? _generatedResult;
   bool _is3DResult = false;
+  String? _resultImageUrl;
 
   // ✅ متغيرات النص
   final TextEditingController _seasonController = TextEditingController();
@@ -63,21 +63,13 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
   // ✅ معالجة تغيير الفصل
   void _onSeasonChanged(String value) {
     setState(() {
-      if (value.isEmpty) {
+      final normalized = _validateAndNormalizeSeason(value);
+      if (normalized != null) {
+        _enteredSeason = normalized;
         _seasonError = '';
       } else {
-        final normalized = _validateAndNormalizeSeason(value);
-        if (normalized != null) {
-          _seasonError = '';
-          if (_seasonController.text != normalized) {
-            _seasonController.value = TextEditingValue(
-              text: normalized,
-              selection: TextSelection.collapsed(offset: normalized.length),
-            );
-          }
-        } else {
-          _seasonError = 'Please enter a valid season: Spring, Summer, Autumn, or Winter';
-        }
+        _enteredSeason = '';
+        _seasonError = 'Please enter Spring, Summer, Autumn, or Winter';
       }
     });
   }
@@ -91,6 +83,7 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
         _selectedImage = File(pickedFile.path);
         _generatedResult = null;
         _is3DResult = false;
+        _resultImageUrl = null;
       });
     }
   }
@@ -104,103 +97,402 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
         _selectedImage = File(pickedFile.path);
         _generatedResult = null;
         _is3DResult = false;
+        _resultImageUrl = null;
       });
     }
   }
 
-  // ✅ توليد النتيجة
+  // ============================================================
+  // ✅ دالة استخراج البيانات الحقيقية
+  // ============================================================
+
+  Map<String, dynamic> _extractRealData(Map<String, dynamic> response) {
+    print('🔍 Extracting real data from response...');
+
+    if (response.containsKey('data') && response['data'] is Map) {
+      final firstLevel = response['data'] as Map;
+
+      if (firstLevel.containsKey('data') && firstLevel['data'] is Map) {
+        print('✅ Found nested data (2 levels deep)');
+        return Map<String, dynamic>.from(firstLevel['data']);
+      }
+
+      print('✅ Found data at level 1');
+      return Map<String, dynamic>.from(firstLevel);
+    }
+
+    print('✅ No data wrapper, using root');
+    return response;
+  }
+
+  /// 🎨 دالة لاستخراج الألوان الموسمية
+  List<String> _extractSeasonalColors(Map<String, dynamic> data) {
+    print('🔍 Looking for seasonal colors...');
+
+    if (data.containsKey('seasonal_suggestion')) {
+      final seasonal = data['seasonal_suggestion'];
+      if (seasonal is Map) {
+        if (seasonal.containsKey('colors_en')) {
+          print('✅ Found seasonal colors in root.seasonal_suggestion.colors_en');
+          return List<String>.from(seasonal['colors_en']);
+        }
+        if (seasonal.containsKey('colors')) {
+          print('✅ Found seasonal colors in root.seasonal_suggestion.colors');
+          return List<String>.from(seasonal['colors']);
+        }
+      }
+    }
+
+    if (data.containsKey('nlp') && data['nlp'] is Map) {
+      final nlp = data['nlp'];
+      if (nlp.containsKey('seasonal_suggestion')) {
+        final seasonal = nlp['seasonal_suggestion'];
+        if (seasonal is Map) {
+          if (seasonal.containsKey('colors_en')) {
+            print('✅ Found seasonal colors in nlp.seasonal_suggestion.colors_en');
+            return List<String>.from(seasonal['colors_en']);
+          }
+          if (seasonal.containsKey('colors')) {
+            print('✅ Found seasonal colors in nlp.seasonal_suggestion.colors');
+            return List<String>.from(seasonal['colors']);
+          }
+        }
+      }
+    }
+
+    print('❌ No seasonal colors found');
+    return [];
+  }
+
+  /// 🔥 دالة لاستخراج الألوان الترند
+  List<String> _extractTrendingColors(Map<String, dynamic> data) {
+    print('🔍 Looking for trending colors...');
+
+    if (data.containsKey('trending_now')) {
+      final trending = data['trending_now'];
+      if (trending is Map && trending.containsKey('palette')) {
+        print('✅ Found trending colors in root.trending_now.palette');
+        return List<String>.from(trending['palette']);
+      }
+    }
+
+    if (data.containsKey('nlp') && data['nlp'] is Map) {
+      final nlp = data['nlp'];
+      if (nlp.containsKey('trending_now')) {
+        final trending = nlp['trending_now'];
+        if (trending is Map && trending.containsKey('palette')) {
+          print('✅ Found trending colors in nlp.trending_now.palette');
+          return List<String>.from(trending['palette']);
+        }
+      }
+    }
+
+    print('❌ No trending colors found');
+    return [];
+  }
+
+  /// 📝 دالة لاستخراج التحليل النصي
+  List<Map<String, dynamic>> _extractAnalysisResults(Map<String, dynamic> data) {
+    List<Map<String, dynamic>> results = [];
+
+    if (data.containsKey('analysis_results') && data['analysis_results'] is List) {
+      for (var item in data['analysis_results']) {
+        if (item is Map) {
+          results.add(Map<String, dynamic>.from(item));
+        }
+      }
+    }
+
+    if (data.containsKey('nlp') && data['nlp'] is Map) {
+      final nlp = data['nlp'];
+      if (nlp.containsKey('analysis_results') && nlp['analysis_results'] is List) {
+        for (var item in nlp['analysis_results']) {
+          if (item is Map) {
+            results.add(Map<String, dynamic>.from(item));
+          }
+        }
+      }
+    }
+
+    return results;
+  }
+
+  /// 🖼️ دالة لاستخراج رابط الـ 3D
+  String? _extractResultUrl(Map<String, dynamic> data) {
+    if (data.containsKey('glb') && data['glb'] != null) {
+      return data['glb'].toString();
+    }
+
+    if (data.containsKey('model_url') && data['model_url'] != null) {
+      return data['model_url'].toString();
+    }
+
+    if (data.containsKey('cv') && data['cv'] is Map) {
+      final cv = data['cv'];
+      if (cv.containsKey('model_url') && cv['model_url'] != null) {
+        return cv['model_url'].toString();
+      }
+      if (cv.containsKey('glb_url') && cv['glb_url'] != null) {
+        return cv['glb_url'].toString();
+      }
+    }
+
+    return null;
+  }
+
+  // ============================================================
+  // ✅ دالة توليد النتيجة الرئيسية (المعدلة)
+  // ============================================================
   Future<void> _generateOutput() async {
-    // التحقق من الفصل
     final seasonInput = _seasonController.text.trim();
+    final textInput = _promptController.text.trim();
+
+    // =========================
+    // 1. التحقق من صحة الفصل
+    // =========================
     if (seasonInput.isEmpty) {
-      setState(() => _seasonError = 'Please enter a season');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a season!'), backgroundColor: Colors.orange),
+        const SnackBar(
+          content: Text('Please enter a season'),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
 
     final normalizedSeason = _validateAndNormalizeSeason(seasonInput);
+
     if (normalizedSeason == null) {
-      setState(() => _seasonError = 'Please enter a valid season');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid season!'), backgroundColor: Colors.orange),
+        const SnackBar(
+          content: Text('Invalid season'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
 
-    final hasImage = _selectedImage != null;
-    final hasText = _promptController.text.trim().isNotEmpty;
-
-    if (!hasText && !hasImage) {
+    // =========================
+    // 2. التحقق من وجود صورة أو نص
+    // =========================
+    if (_selectedImage == null && textInput.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a description or upload an image!'), backgroundColor: Colors.orange),
+        const SnackBar(
+          content: Text('Please upload image or enter description'),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
+
+    final finalText = textInput.isNotEmpty ? textInput : 'fashion design';
 
     setState(() {
       _isLoading = true;
-      _seasonError = '';
-      _enteredSeason = normalizedSeason;
     });
 
-    // محاكاة وقت المعالجة
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      String? resultUrl;
+      List<String> seasonalColors = [];
+      List<String> trendingColors = [];
+      List<Map<String, dynamic>> analysisResults = [];
+      String seasonName = normalizedSeason;
 
-    String result;
-    bool is3D = hasImage;
+      if (_selectedImage != null && textInput.isNotEmpty) {
+        // 🟣 صورة + نص
+        print('📡 Calling generateDesign (image + text)...');
+        final response = await _aiRepository.generateDesign(
+          traineeId: '1',
+          season: normalizedSeason,
+          text: finalText,
+          imagePath: _selectedImage!.path,
+        );
 
-    if (hasImage) {
-      result = _generate3DResult();
-    } else {
-      result = _generateTextResult();
+        print('🤖 AI RESPONSE: $response');
+
+        final realData = _extractRealData(response);
+        print('📦 REAL DATA keys: ${realData.keys}');
+
+        seasonalColors = _extractSeasonalColors(realData);
+        trendingColors = _extractTrendingColors(realData);
+        analysisResults = _extractAnalysisResults(realData);
+        resultUrl = _extractResultUrl(realData);
+        seasonName = _extractSeasonName(realData, normalizedSeason);
+
+      } else if (_selectedImage != null) {
+        // 🔵 صورة فقط - نحتاج Call منفصل لـ NLP عشان نجيب الألوان
+        print('📡 Calling analyzeFabricWithCV (image only)...');
+        final cvResponse = await _aiRepository.analyzeFabricWithCV(
+          traineeId: 1,
+          season: normalizedSeason,
+          imagePath: _selectedImage!.path,
+        );
+
+        print('🤖 CV RESPONSE: $cvResponse');
+
+        final realData = _extractRealData(cvResponse);
+        print('📦 CV REAL DATA keys: ${realData.keys}');
+
+        // استخراج رابط الـ 3D model
+        resultUrl = _extractResultUrl(realData);
+
+        // ✅ مهم: عمل Call منفصل لـ NLP عشان نجيب الألوان
+        print('📡 Calling processText to get colors...');
+        try {
+          final nlpResponse = await _aiRepository.processText(
+            traineeId: 1,
+            text: finalText,
+            season: normalizedSeason,
+          );
+
+          print('🤖 NLP RESPONSE for colors: $nlpResponse');
+
+          final nlpRealData = _extractRealData(nlpResponse);
+          print('📦 NLP REAL DATA keys: ${nlpRealData.keys}');
+
+          seasonalColors = _extractSeasonalColors(nlpRealData);
+          trendingColors = _extractTrendingColors(nlpRealData);
+          analysisResults = _extractAnalysisResults(nlpRealData);
+          seasonName = _extractSeasonName(nlpRealData, normalizedSeason);
+
+        } catch (nlpError) {
+          print('❌ Error fetching colors from NLP: $nlpError');
+          // إذا فشل الـ NLP، نستخدم الألوان الافتراضية
+        }
+
+      } else {
+        // 🟢 نص فقط
+        print('📡 Calling processText (text only)...');
+        final response = await _aiRepository.processText(
+          traineeId: 1,
+          text: finalText,
+          season: normalizedSeason,
+        );
+
+        print('🤖 AI RESPONSE: $response');
+
+        final realData = _extractRealData(response);
+        print('📦 REAL DATA keys: ${realData.keys}');
+
+        seasonalColors = _extractSeasonalColors(realData);
+        trendingColors = _extractTrendingColors(realData);
+        analysisResults = _extractAnalysisResults(realData);
+        seasonName = _extractSeasonName(realData, normalizedSeason);
+      }
+
+      // ===============================
+      // تعديل عنوان IP
+      // ===============================
+      if (resultUrl != null) {
+        resultUrl = resultUrl
+            .replaceAll('127.0.0.1', '192.168.1.22')
+            .replaceAll('192.168.1.5', '192.168.1.22');
+      }
+
+      // ===============================
+      // بناء النص الناتج
+      // ===============================
+      String resultText = '';
+
+      // ✅ الألوان الموسمية
+      if (seasonalColors.isNotEmpty) {
+        resultText += '🎨 Seasonal Colors ($seasonName):\n';
+        for (var color in seasonalColors) {
+          resultText += '   • $color\n';
+        }
+        resultText += '\n';
+      }
+
+      // ✅ الألوان الترند
+      if (trendingColors.isNotEmpty) {
+        resultText += '🔥 Trending Colors:\n';
+        for (var color in trendingColors) {
+          resultText += '   • $color\n';
+        }
+        resultText += '\n';
+      }
+
+      // ✅ معلومات الـ 3D model
+      if (resultUrl != null && resultUrl.toLowerCase().endsWith('.glb')) {
+        resultText += '🎮 3D Model Generated Successfully!\n\n';
+      }
+
+      // ✅ التحليل النصي
+      if (analysisResults.isNotEmpty) {
+        resultText += '📝 Analysis:\n';
+        for (var item in analysisResults) {
+          if (item['text_en'] != null && item['text_en'].toString().isNotEmpty) {
+            resultText += '   • ${item['text_en']}\n';
+          }
+        }
+        resultText += '\n';
+      }
+
+      // ✅ إذا كان صورة فقط وما في ألوان من NLP
+      if (_selectedImage != null && textInput.isEmpty && seasonalColors.isEmpty) {
+        resultText += '💡 Tip: Add a description to get personalized color suggestions!\n\n';
+      }
+
+      // ✅ رسالة افتراضية
+      if (resultText.trim().isEmpty) {
+        resultText = '✅ Design generated successfully!\n'
+            '🌸 Season: $seasonName\n'
+            '✨ Try uploading an image to generate a 3D model!';
+      }
+
+      setState(() {
+        _generatedResult = resultText;
+        _resultImageUrl = resultUrl;
+        _is3DResult = resultUrl != null &&
+            resultUrl.toLowerCase().endsWith('.glb');
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('AI Design Generated Successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+    } catch (e) {
+      print('❌ AI ERROR: $e');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  /// 📅 دالة مساعدة لاستخراج اسم الموسم
+  String _extractSeasonName(Map<String, dynamic> data, String defaultSeason) {
+    if (data.containsKey('seasonal_suggestion')) {
+      final seasonal = data['seasonal_suggestion'];
+      if (seasonal is Map && seasonal.containsKey('season')) {
+        return seasonal['season'].toString();
+      }
     }
 
-    setState(() {
-      _generatedResult = result;
-      _is3DResult = is3D;
-      _isLoading = false;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(is3D ? '3D model generated!' : 'Text generated!'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
-  // ✅ توليد نتيجة 3D
-  String _generate3DResult() {
-    final season = _enteredSeason;
-    final prompt = _promptController.text.trim();
-    final promptText = prompt.isNotEmpty ? '\n📝 "${prompt}"' : '';
-
-    return '✅ 3D model generated successfully for $season season!$promptText\n\n'
-        '🎨 Suggested colors: ${_getSeasonColors(season)}\n'
-        '✨ Trending color palettes available\n'
-        '🖼️ Image: ${_selectedImage != null ? "Uploaded" : "None"}';
-  }
-
-  // ✅ توليد نتيجة نصية
-  String _generateTextResult() {
-    final season = _enteredSeason;
-    final prompt = _promptController.text.trim();
-
-    if (prompt.isEmpty) {
-      return '📝 Please enter a description to generate text!\n\n'
-          '🌸 Season: $season\n'
-          '✨ Trending colors: ${_getSeasonColors(season)}\n'
-          '💡 Tip: Try describing what you want to create.';
+    if (data.containsKey('nlp') && data['nlp'] is Map) {
+      final nlp = data['nlp'];
+      if (nlp.containsKey('seasonal_suggestion')) {
+        final seasonal = nlp['seasonal_suggestion'];
+        if (seasonal is Map && seasonal.containsKey('season')) {
+          return seasonal['season'].toString();
+        }
+      }
     }
 
-    return '📝 Design generated for $season season!\n\n'
-        '🎨 ${_getSeasonEnhancements(season)}\n'
-        '💡 Tip: Add an image to generate a 3D model!';
+    return defaultSeason;
   }
 
-  // ✅ الحصول على ألوان الموسم
+  // ✅ دالة مساعدة للحصول على ألوان الموسم (للعرض المؤقت)
   String _getSeasonColors(String season) {
     final s = season.toLowerCase();
     if (s.contains('spring')) return 'Pink, Green, Yellow, Lavender';
@@ -208,16 +500,6 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
     if (s.contains('autumn') || s.contains('fall')) return 'Brown, Orange, Red, Burgundy';
     if (s.contains('winter')) return 'White, Blue, Silver, Navy';
     return 'Purple, Gold, Silver';
-  }
-
-  // ✅ الحصول على تحسينات الموسم
-  String _getSeasonEnhancements(String season) {
-    final s = season.toLowerCase();
-    if (s.contains('spring')) return 'Fresh flowers, Pastel colors, Soft lighting';
-    if (s.contains('summer')) return 'Bright colors, Beach vibes, Warm lighting';
-    if (s.contains('autumn') || s.contains('fall')) return 'Warm tones, Cozy atmosphere, Golden lighting';
-    if (s.contains('winter')) return 'Cool colors, Snow effects, Frosty lighting';
-    return 'Add seasonal elements for better results';
   }
 
   // ✅ زر رفع الصورة
@@ -284,7 +566,7 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // الهيدر
+                  // ==================== الهيدر ====================
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 20),
@@ -512,6 +794,7 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
                                         _selectedImage = null;
                                         _generatedResult = null;
                                         _is3DResult = false;
+                                        _resultImageUrl = null;
                                       });
                                     },
                                   ),
@@ -601,7 +884,7 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
                               ),
                               const SizedBox(width: 10),
                               Text(
-                                _is3DResult ? '3D Result!' : 'Text Result',
+                                _is3DResult ? '🎮 3D Result!' : '📝 Text Result',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -612,6 +895,25 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
                           ),
                           const SizedBox(height: 12),
                           Text(_generatedResult!, style: const TextStyle(fontSize: 13, height: 1.5)),
+
+                          // عرض الـ 3D model
+                          if (_resultImageUrl != null && _resultImageUrl!.toLowerCase().endsWith('.glb'))
+                            Padding(
+                              padding: const EdgeInsets.only(top: 16),
+                              child: SizedBox(
+                                height: 400,
+                                child: ModelViewer(
+                                  src: _resultImageUrl!,
+                                  alt: "3D Model",
+                                  ar: true,
+                                  autoRotate: true,
+                                  cameraControls: true,
+                                  backgroundColor: Colors.white,
+                                  disableZoom: false,
+                                  loading: Loading.eager,
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),

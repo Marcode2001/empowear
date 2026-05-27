@@ -10,7 +10,9 @@ class JobRepository {
 
   // 📥 1. جلب جميع الوظائف
   Future<List<JobModel>> fetchJobs({String? category}) async {
+
     final Map<String, String> queryParams = {};
+
     if (category != null && category != 'all') {
       queryParams['category'] = category;
     }
@@ -21,9 +23,21 @@ class JobRepository {
       requireAuth: true,
     );
 
-    if (response['success']) {
-      final List<dynamic> data = response['data']['jobs'] ?? [];
-      return data.map((json) => JobModel.fromJson(json)).toList();
+    print("📦 Jobs API Response:");
+    print(response);
+
+    /// ✅ هون الحل الحقيقي
+    /// الـ API عم يرجع List مباشرة
+    if (response['success'] == true) {
+
+      final dynamic rawData = response['data'];
+
+      if (rawData is List) {
+
+        return rawData
+            .map((json) => JobModel.fromJson(json))
+            .toList();
+      }
     }
 
     return [];
@@ -52,20 +66,18 @@ class JobRepository {
     String? coverLetter,
     String? resumeUrl,
   }) async {
+
     final response = await ApiService.post(
-      endpoint: 'jobs/$jobId/apply',
+      endpoint: 'application/apply/',
       data: {
-        'userId': userId,
-        'userName': userName,
-        'userEmail': userEmail,
-        'coverLetter': coverLetter,
-        'resumeUrl': resumeUrl,
-        'status': 'pending',
+        'job_opportunity': int.parse(jobId),
       },
       requireAuth: true,
     );
 
-    return response['success'];
+    print(response);
+
+    return response['success'] == true;
   }
 
   // 🗑️ 4. سحب التقديم على وظيفة
@@ -79,18 +91,61 @@ class JobRepository {
   }
 
   // 📥 5. جلب طلبات التقديم الخاصة بالمستخدم
-  Future<List<JobApplication>> fetchUserApplications(String userId) async {
-    final response = await ApiService.get(
-      endpoint: 'users/$userId/job-applications',
-      requireAuth: true,
-    );
+  // 📥 5. جلب طلبات التقديم الخاصة بالمستخدم
+  Future<List<JobApplication>> fetchUserApplications(
+      String userId,
+      ) async {
 
-    if (response['success']) {
-      final List<dynamic> data = response['data']['applications'] ?? [];
-      return data.map((json) => JobApplication.fromJson(json)).toList();
+    try {
+
+      final response = await ApiService.get(
+        endpoint: 'application/',
+        requireAuth: true,
+      );
+
+      print('📦 APPLICATIONS RESPONSE');
+      print(response);
+
+      if (response['success'] != true) {
+        return [];
+      }
+
+      final List<dynamic> data = response['data'];
+
+      return data.map((json) {
+
+        return JobApplication(
+          id: json['id'].toString(),
+
+          jobId: json['job_opportunity'].toString(),
+
+          jobTitle: json['job_title'] ?? 'Unknown Job',
+
+          company: 'Empower',
+
+          companyLogo: '🏢',
+
+          location: json['location'] ?? '',
+
+          salary: 'Not specified',
+
+          appliedDate: DateTime.tryParse(
+            json['applied_at'] ?? '',
+          ) ?? DateTime.now(),
+
+          status: ApplicationStatusExtension.fromString(
+            json['application_status'] ?? 'pending',
+          ),
+        );
+
+      }).toList();
+
+    } catch (e) {
+
+      print('❌ fetchUserApplications Error: $e');
+
+      return [];
     }
-
-    return [];
   }
 
   // 📊 6. تحديث حالة التقديم (للمدرب/الأدمن)
@@ -99,16 +154,24 @@ class JobRepository {
     required String newStatus,
     String? feedback,
   }) async {
-    final response = await ApiService.patch(
-      endpoint: 'applications/$applicationId/status',
-      data: {
-        'status': newStatus,
-        'feedback': feedback,
-      },
+
+    String endpoint = '';
+
+    if (newStatus == 'approved') {
+      endpoint = 'application/$applicationId/accept/';
+    } else {
+      endpoint = 'application/$applicationId/reject/';
+    }
+
+    final response = await ApiService.put(
+      endpoint: endpoint,
+      data: {},
       requireAuth: true,
     );
 
-    return response['success'];
+    print(response);
+
+    return response['success'] == true;
   }
 
   // 🔄 7. تحديث قائمة طلبات التقديم

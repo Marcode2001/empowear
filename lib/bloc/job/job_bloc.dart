@@ -195,7 +195,10 @@ class JobBloc extends Bloc<JobEvent, JobState> {
       _userApplications = applications;
       emit(UserApplicationsLoaded(applications: applications));
     } catch (e) {
-      emit(JobError(message: 'Failed to load applications: ${e.toString()}'));
+      print('⚠️ Failed to load applications: $e');
+
+      /// لا نكسر الواجهة
+      emit(UserApplicationsLoaded(applications: []));
     }
   }
 

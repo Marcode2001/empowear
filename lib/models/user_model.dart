@@ -2,6 +2,8 @@
 // ============================================================
 // 🧑 نموذج بيانات المستخدم - موحد للتطبيق
 // ============================================================
+// 🧑 نموذج بيانات المستخدم - موحد للتطبيق
+// ============================================================
 
 enum UserType { admin, trainer, trainee, unknown }
 
@@ -24,18 +26,11 @@ class User {
     this.profileImage = '',
   });
 
-  // ✅ دالة لتحويل بيانات الـ JSON القادمة من الباك إند إلى كائن User
   factory User.fromJson(Map<String, dynamic> json) {
-    // 🔍 طباعة للتصحيح
-    print('👤 [User.fromJson] Raw JSON: $json');
-
-    // ✅ استخراج الدور بشكل صحيح
     String? role = json['role']?.toString().toLowerCase();
     if (role == null || role.isEmpty) {
       role = json['user_type']?.toString().toLowerCase();
     }
-
-    print('👤 [User.fromJson] Extracted role: $role');
 
     return User(
       id: json['id']?.toString() ?? json['user_id']?.toString() ?? '',
@@ -48,32 +43,16 @@ class User {
     );
   }
 
-  // ✅ دالة مساعدة لتحويل نص الـ Role إلى Enum
   static UserType _parseUserType(String? role) {
-    print('👤 [_parseUserType] Parsing role: "$role"');
-
-    if (role == null || role.isEmpty) {
-      print('👤 [_parseUserType] Role is null or empty, defaulting to trainee');
-      return UserType.trainee;
-    }
-
+    if (role == null || role.isEmpty) return UserType.trainee;
     switch (role.toLowerCase()) {
-      case 'admin':
-        print('👤 [_parseUserType] -> admin');
-        return UserType.admin;
-      case 'trainer':
-        print('👤 [_parseUserType] -> trainer');
-        return UserType.trainer;
-      case 'trainee':
-        print('👤 [_parseUserType] -> trainee');
-        return UserType.trainee;
-      default:
-        print('👤 [_parseUserType] Unknown role: "$role", defaulting to trainee');
-        return UserType.trainee;
+      case 'admin': return UserType.admin;
+      case 'trainer': return UserType.trainer;
+      case 'trainee': return UserType.trainee;
+      default: return UserType.trainee;
     }
   }
 
-  // ✅ دالة لتحويل الـ User إلى Map (للتخزين أو الإرسال)
   Map<String, dynamic> toJson() {
     return {
       'id': id,

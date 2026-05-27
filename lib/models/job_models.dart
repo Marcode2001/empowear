@@ -48,23 +48,58 @@ class JobModel {
 
   // ✅ تحويل من JSON إلى JobModel
   factory JobModel.fromJson(Map<String, dynamic> json) {
+
     return JobModel(
+
       id: json['id']?.toString() ?? '',
+
       title: json['title'] ?? '',
-      company: json['company'] ?? '',
+
+      /// ✅ الباك ماعندو company
+      company: json['company'] ?? 'Empower',
+
+      /// ✅ افتراضي
       companyLogo: json['companyLogo'] ?? '🏢',
+
       location: json['location'] ?? '',
+
+      /// ✅ افتراضي لأنو الباك مايرجع type
       type: json['type'] ?? 'Full-time',
+
+      /// ✅ افتراضي
       category: json['category'] ?? 'business',
-      salary: json['salary'] ?? '',
+
+      /// ✅ افتراضي
+      salary: json['salary'] ?? 'Not specified',
+
       description: json['description'] ?? '',
-      requirements: List<String>.from(json['requirements'] ?? []),
-      // ✅ الحل: إضافة ?? DateTime.now() لتجنب الخطأ
-      postedDate: _parseDate(json['postedDate']) ?? DateTime.now(),
-      deadline: _parseDate(json['deadline']) ?? DateTime.now().add(const Duration(days: 30)),
+
+      /// ✅ الباك يرجع required_skills كنص
+      requirements: json['required_skills'] != null
+          ? json['required_skills']
+          .toString()
+          .split(',')
+          .map((e) => e.trim())
+          .toList()
+          : [],
+
+      /// ✅ الباك يرجع created_at
+      postedDate:
+      _parseDate(json['created_at']) ?? DateTime.now(),
+
+      /// ✅ مافي deadline بالباك
+      deadline: DateTime.now().add(
+        const Duration(days: 30),
+      ),
+
+      /// ✅ افتراضي
       isRemote: json['isRemote'] ?? false,
+
+      /// ✅ افتراضي
       experience: json['experience'] ?? 'Entry-Level',
+
       imageUrl: json['imageUrl'],
+
       isApplied: json['isApplied'] ?? false,
     );
   }
@@ -175,10 +210,18 @@ extension ApplicationStatusExtension on ApplicationStatus {
   }
 
   static ApplicationStatus fromString(String value) {
+
     switch (value.toLowerCase()) {
-      case 'approved': return ApplicationStatus.approved;
-      case 'rejected': return ApplicationStatus.rejected;
-      default: return ApplicationStatus.pending;
+
+      case 'approved':
+      case 'accepted':
+        return ApplicationStatus.approved;
+
+      case 'rejected':
+        return ApplicationStatus.rejected;
+
+      default:
+        return ApplicationStatus.pending;
     }
   }
 }

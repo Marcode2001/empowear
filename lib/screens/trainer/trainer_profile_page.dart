@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/auth/auth_bloc.dart';
+// ✅ التعديل: استيراد ChatBloc لاستخدام ResetChatEvent
+import '../../bloc/chat/chat_bloc.dart';
 import '../auth/login_screen.dart';
 
 class TrainerProfilePage extends StatefulWidget {
@@ -44,6 +46,11 @@ class _TrainerProfilePageState extends State<TrainerProfilePage> {
       });
 
       try {
+        // ✅ ✅ ✅ التعديل الأهم: إعادة تعيين ChatBloc قبل تسجيل الخروج
+        // هذا يمنع بقاء بيانات المحادثات القديمة في الذاكرة
+        print("🔄 [TrainerProfilePage] Resetting ChatBloc before logout...");
+        context.read<ChatBloc>().add(const ResetChatEvent());
+
         // ✅ استخدام AuthBloc بدلاً من AuthProvider
         context.read<AuthBloc>().add(const LogoutEvent());
 

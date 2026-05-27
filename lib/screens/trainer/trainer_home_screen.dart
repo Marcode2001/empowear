@@ -29,7 +29,7 @@ class _TrainerHomeScreenState extends State<TrainerHomeScreen> {
 
   final List<Widget> _screens = [
     const TrainerHomePage(),
-    const TrainerChatPage(),
+    TrainerChatPage(),
     const TrainerProfilePage(),
   ];
 

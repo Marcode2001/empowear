@@ -11,6 +11,7 @@ import '../../services/api_service.dart';
 import 'admin_jobs_page.dart';
 import 'admin_projects_page.dart';
 import 'admin_courses_page.dart';
+import 'admin_applications_screen.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -239,32 +240,66 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   Widget _buildCategoryGrid() {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _buildCategoryCard(
-            title: 'Job\nOpportunities',
-            icon: Icons.work,
-            color: Colors.teal,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminJobsScreen())),
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _buildCategoryCard(
+                title: 'Job\nOpportunities',
+                icon: Icons.work,
+                color: Colors.teal,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AdminJobsScreen(),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildCategoryCard(
+                title: 'Students\nProject',
+                icon: Icons.folder_special,
+                color: Colors.orange,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AdminProjectsScreen(),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildCategoryCard(
+                title: 'Courses',
+                icon: Icons.library_books,
+                color: Colors.deepPurple,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AdminCoursesScreen(),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildCategoryCard(
-            title: 'Students\nProject',
-            icon: Icons.folder_special,
-            color: Colors.orange,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminProjectsScreen())),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildCategoryCard(
-            title: 'Courses',
-            icon: Icons.library_books,
-            color: Colors.deepPurple,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCoursesScreen())),
+
+        const SizedBox(height: 12),
+
+        // ✅ مربع الطلبات الجديد
+        _buildCategoryCard(
+          title: 'Job Applications',
+          icon: Icons.assignment_turned_in,
+          color: Colors.green,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const AdminApplicationsScreen(),
+            ),
           ),
         ),
       ],

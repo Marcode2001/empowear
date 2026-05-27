@@ -20,6 +20,18 @@ class CourseLoading extends CourseState {
   const CourseLoading();
 }
 
+// ✅ تحميل بدون حذف البيانات القديمة
+class CourseRefreshing extends CourseState {
+  final List<CourseItem> currentCourses;
+
+  const CourseRefreshing({
+    required this.currentCourses,
+  });
+
+  @override
+  List<Object?> get props => [currentCourses];
+}
+
 // ✅ الكورسات المسجل فيها
 class RegisteredCoursesLoaded extends CourseState {
   final List<CourseItem> registeredCourses;

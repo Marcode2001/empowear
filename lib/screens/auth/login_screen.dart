@@ -1,8 +1,9 @@
-// 📄 lib/screens/auth/login_screen.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/auth/auth_bloc.dart';
+// ✅ استيراد ChatBloc لاستخدام ResetChatEvent
+import '../../bloc/chat/chat_bloc.dart';
 import '../../models/user_model.dart';
 import '../admin/admin_home_screen.dart';
 import '../trainer/trainer_home_screen.dart';
@@ -334,37 +335,41 @@ class _LoginScreenState extends State<LoginScreen>
                                   child: BlocConsumer<AuthBloc, AuthState>(
                                     listener: (context, state) {
                                       if (state is AuthAuthenticated) {
-                                        final enteredEmail = _emailController.text.trim();
-                                        print('✅ Email entered: $enteredEmail');
-                                        print('✅ User type from state: ${state.user.userType}');
+                                        // ✅ ✅ ✅ التعديل الأهم: إعادة تعيين ChatBloc قبل التنقل
+                                        print("🔄 [LoginScreen] Resetting ChatBloc before navigation...");
+                                        context.read<ChatBloc>().add(const ResetChatEvent());
 
-                                        // ✅ استخدام الإيميل لتحديد الشاشة
-                                        if (enteredEmail == 'marwa@gmail.com') {
-                                          print('✅ Going to Trainer Home Screen');
+                                        print("✅ User Type: ${state.user.userType.name}");
+
+                                        // ✅ ✅ ✅ التعديل: مقارنة enum مع enum (وليس String)
+                                        // ❌ لا تستخدم toLowerCase() أو مقارنة Strings
+                                        // ✅ استخدم enum مباشرة
+
+                                        if (state.user.userType == UserType.admin) {
                                           Navigator.pushReplacement(
                                             context,
-                                            MaterialPageRoute(builder: (_) => const TrainerHomeScreen()),
-                                          );
-                                        } else if (enteredEmail == 'admin@gmail.com') {
-                                          print('✅ Going to Admin Home Screen');
-                                          Navigator.pushReplacement(
-                                            context,
-                                            MaterialPageRoute(builder: (_) => const AdminHomeScreen()),
-                                          );
-                                        } else {
-                                          print('✅ Going to Trainee Home Screen');
-                                          Navigator.pushReplacement(
-                                            context,
-                                            MaterialPageRoute(builder: (_) => const TraineeHomeScreen()),
+                                            MaterialPageRoute(
+                                              builder: (_) => const AdminHomeScreen(),
+                                            ),
                                           );
                                         }
-                                      } else if (state is AuthError) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text(state.message),
-                                            backgroundColor: Colors.red,
-                                          ),
-                                        );
+                                        else if (state.user.userType == UserType.trainer) {
+                                          Navigator.pushReplacement(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => const TrainerHomeScreen(),
+                                            ),
+                                          );
+                                        }
+                                        else {
+                                          // UserType.trainee or any other
+                                          Navigator.pushReplacement(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => const TraineeHomeScreen(),
+                                            ),
+                                          );
+                                        }
                                       }
                                     },
                                     builder: (context, state) {

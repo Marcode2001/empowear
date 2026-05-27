@@ -99,8 +99,9 @@ class RequiredProject {
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       points: json['points'] ?? 0,
-      submissionDate: json['submissionDate'] != null
-          ? DateTime.parse(json['submissionDate'])
+      // ✅ API Django يرجع submitted_at
+      submissionDate: json['submitted_at'] != null
+          ? DateTime.parse(json['submitted_at'])
           : DateTime.now(),
       courseId: json['courseId']?.toString() ?? '',
       courseName: json['courseName'] ?? '',
@@ -126,6 +127,9 @@ class RequiredProject {
 // ============================================================
 // نموذج مشروع الطالب (Student Project)
 // ============================================================
+// ============================================================
+// نموذج مشروع الطالب (Student Project)
+// ============================================================
 class StudentProject {
   final String id;
   final String title;
@@ -136,6 +140,11 @@ class StudentProject {
   final String? projectUrl;
   final DateTime? submissionDate;
   final double? grade;
+
+  // ✅ تقييم API
+  final String? gradeLetter;
+  final bool? isPassed;
+
   final String? feedback;
   final String status;
 
@@ -148,31 +157,45 @@ class StudentProject {
     this.imageUrl,
     this.projectUrl,
     this.submissionDate,
-    this.grade,
+    this.gradeLetter,
+    this.isPassed,
     this.feedback,
     this.status = 'pending',
+    this.grade,
   });
 
-  // ✅ تحويل JSON إلى StudentProject
   factory StudentProject.fromJson(Map<String, dynamic> json) {
     return StudentProject(
       id: json['id']?.toString() ?? '',
       title: json['title'] ?? '',
-      studentId: json['studentId']?.toString() ?? '',
-      studentName: json['studentName'] ?? '',
-      description: json['description'] ?? '',
-      imageUrl: json['imageUrl'],
-      projectUrl: json['projectUrl'],
-      submissionDate: json['submissionDate'] != null
-          ? DateTime.parse(json['submissionDate'])
+      studentId: json['trainee_profile']?.toString() ?? '',
+      studentName: json['trainee_full_name'] ?? '',
+      description: json['session_title'] ?? '',
+      imageUrl: json['image'],
+      projectUrl: null,
+      submissionDate: json['submitted_at'] != null
+          ? DateTime.parse(json['submitted_at'])
           : null,
-      grade: json['grade']?.toDouble(),
+
+      grade: json['evaluation'] != null
+          ? (json['evaluation']['grade'] ?? json['evaluation']['score'])?.toDouble()
+          : null,
+
+      gradeLetter: json['evaluation'] != null
+          ? json['evaluation']['grade_letter']
+          : null,
+
+      isPassed: json['evaluation'] != null
+          ? json['evaluation']['is_passed']
+          : null,
+
       feedback: json['feedback'],
-      status: json['status'] ?? 'pending',
+      status: json['submission_status'] == 'Evaluated'
+          ? 'graded'
+          : 'pending',
     );
   }
 
-  // ✅ تحويل StudentProject إلى JSON
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -184,6 +207,8 @@ class StudentProject {
       'projectUrl': projectUrl,
       'submissionDate': submissionDate?.toIso8601String(),
       'grade': grade,
+      'grade_letter': gradeLetter,
+      'is_passed': isPassed,
       'feedback': feedback,
       'status': status,
     };

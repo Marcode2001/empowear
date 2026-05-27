@@ -211,57 +211,113 @@ class _ReceiveStudentProjectsPageState extends State<ReceiveStudentProjectsPage>
     );
   }
 
-  Widget _buildGradeSelector({required Function(String) onGradeSelected}) {
-    final List<String> grades = ['A+', 'A', 'B+', 'B', 'C+', 'C', 'D', 'F'];
-    String? _selectedGrade;
+  Widget _buildGradeSelector({
+    required Function(String) onGradeSelected,
+  }) {
+    final List<String> grades = [
+      'A+',
+      'A',
+      'B+',
+      'B',
+      'C+',
+      'C',
+      'D',
+      'F'
+    ];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Select Grade', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.deepPurple)),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: grades.map((grade) {
-            final isF = grade == 'F';
-            return StatefulBuilder(
-              builder: (context, setState) {
+    String? selectedGrade;
+
+    return StatefulBuilder(
+      builder: (context, setModalState) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Select Grade',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.deepPurple,
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: grades.map((grade) {
+                final isSelected = selectedGrade == grade;
+                final isF = grade == 'F';
+
                 return GestureDetector(
                   onTap: () {
-                    setState(() => _selectedGrade = grade);
+                    setModalState(() {
+                      selectedGrade = grade;
+                    });
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      gradient: _selectedGrade == grade
-                          ? (isF
-                          ? const LinearGradient(colors: [Colors.red, Colors.redAccent])
-                          : const LinearGradient(colors: [Colors.green, Colors.lightGreen]))
-                          : null,
-                      color: _selectedGrade == grade ? null : Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.deepPurple.withOpacity(0.3)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
                     ),
-                    child: Text(grade, style: TextStyle(color: _selectedGrade == grade ? Colors.white : Colors.deepPurple, fontWeight: FontWeight.bold)),
+                    decoration: BoxDecoration(
+                      gradient: isSelected
+                          ? (isF
+                          ? const LinearGradient(
+                        colors: [Colors.red, Colors.redAccent],
+                      )
+                          : const LinearGradient(
+                        colors: [Colors.green, Colors.lightGreen],
+                      ))
+                          : null,
+                      color: isSelected ? null : Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.deepPurple.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Text(
+                      grade,
+                      style: TextStyle(
+                        color: isSelected
+                            ? Colors.white
+                            : Colors.deepPurple,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 );
-              },
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 20),
-        ElevatedButton(
-          onPressed: _selectedGrade != null ? () => onGradeSelected(_selectedGrade!) : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.deepPurple,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-            minimumSize: const Size(double.infinity, 45),
-          ),
-          child: const Text('Submit Grade', style: TextStyle(fontWeight: FontWeight.bold)),
-        ),
-      ],
+              }).toList(),
+            ),
+
+            const SizedBox(height: 20),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: selectedGrade != null
+                    ? () => onGradeSelected(selectedGrade!)
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  minimumSize: const Size(double.infinity, 45),
+                ),
+                child: const Text(
+                  'Submit Grade',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

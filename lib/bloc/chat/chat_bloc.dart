@@ -1,7 +1,11 @@
-// lib/bloc/chat/chat_bloc.dart
+// ============================================================
+// 💬 Chat BLoC - نسخة كاملة محدثة
+// ============================================================
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../models/chat_models.dart';
+import '../../models/user_model.dart';
 import '../../repositories/chat_repository.dart';
 
 // ============================================================
@@ -9,60 +13,71 @@ import '../../repositories/chat_repository.dart';
 // ============================================================
 abstract class ChatEvent extends Equatable {
   const ChatEvent();
-  @override
-  List<Object?> get props => [];
+  @override List<Object?> get props => [];
+}
+
+// ✅ التعديل 1: إضافة ResetChatEvent - يستخدم لمسح حالة الدردشة عند تسجيل الخروج أو تبديل المستخدم
+class ResetChatEvent extends ChatEvent {
+  const ResetChatEvent();
 }
 
 class LoadConversationsEvent extends ChatEvent {
   final String userId;
-  const LoadConversationsEvent({required this.userId});
-  @override
-  List<Object?> get props => [userId];
+  final UserType userType;
+  const LoadConversationsEvent({required this.userId, required this.userType});
+  @override List<Object?> get props => [userId, userType];
 }
 
+// ✅ التعديل 2: conversationId من String إلى int
 class LoadMessagesEvent extends ChatEvent {
   final String userId;
-  final String otherUserId;
-  const LoadMessagesEvent({required this.userId, required this.otherUserId});
-  @override
-  List<Object?> get props => [userId, otherUserId];
+  final int conversationId; // ✅ int
+  final UserType userType;
+
+  const LoadMessagesEvent({
+    required this.userId,
+    required this.conversationId,
+    required this.userType,
+  });
+  @override List<Object?> get props => [userId, conversationId, userType];
 }
 
+// ✅ التعديل 3: conversationId من String إلى int
 class SendMessageEvent extends ChatEvent {
+  final int conversationId; // ✅ int
   final String senderId;
   final String senderName;
   final String receiverId;
   final String receiverName;
   final String message;
-  final String? imageUrl;
   final String? courseId;
+  final UserType senderType;
+
   const SendMessageEvent({
+    required this.conversationId,
     required this.senderId,
     required this.senderName,
     required this.receiverId,
     required this.receiverName,
     required this.message,
-    this.imageUrl,
     this.courseId,
+    required this.senderType,
   });
+
   @override
-  List<Object?> get props => [senderId, receiverId, message];
+  List<Object?> get props => [
+    conversationId,
+    senderId,
+    receiverId,
+    message,
+  ];
 }
 
-class MarkMessagesAsReadEvent extends ChatEvent {
+class MarkReadEvent extends ChatEvent {
   final String userId;
   final String otherUserId;
-  const MarkMessagesAsReadEvent({required this.userId, required this.otherUserId});
-  @override
-  List<Object?> get props => [userId, otherUserId];
-}
-
-class ClearConversationEvent extends ChatEvent {
-  final String userId;
-  final String otherUserId;
-  const ClearConversationEvent({required this.userId, required this.otherUserId});
-  @override
-  List<Object?> get props => [userId, otherUserId];
+  const MarkReadEvent({required this.userId, required this.otherUserId});
+  @override List<Object?> get props => [userId, otherUserId];
 }
 
 // ============================================================
@@ -70,8 +85,7 @@ class ClearConversationEvent extends ChatEvent {
 // ============================================================
 abstract class ChatState extends Equatable {
   const ChatState();
-  @override
-  List<Object?> get props => [];
+  @override List<Object?> get props => [];
 }
 
 class ChatInitial extends ChatState {
@@ -86,160 +100,160 @@ class ConversationsLoaded extends ChatState {
   final List<ChatConversation> conversations;
   final int unreadCount;
   const ConversationsLoaded({required this.conversations, this.unreadCount = 0});
-  @override
-  List<Object?> get props => [conversations, unreadCount];
+  @override List<Object?> get props => [conversations, unreadCount];
 }
 
 class MessagesLoaded extends ChatState {
   final List<ChatMessage> messages;
   const MessagesLoaded({required this.messages});
-  @override
-  List<Object?> get props => [messages];
+  @override List<Object?> get props => [messages];
 }
 
 class MessageSent extends ChatState {
   final ChatMessage message;
   const MessageSent({required this.message});
-  @override
-  List<Object?> get props => [message];
+  @override List<Object?> get props => [message];
 }
 
 class ChatError extends ChatState {
   final String message;
   const ChatError({required this.message});
-  @override
-  List<Object?> get props => [message];
+  @override List<Object?> get props => [message];
 }
 
 // ============================================================
-// 🧠 BLoC
+// 📍 BLoC
 // ============================================================
 class ChatBloc extends Bloc<ChatEvent, ChatState> {
-  final ChatRepository _chatRepository;
+  final ChatRepository _repo;
 
-  // 💾 تخزين مؤقت للمحادثات والرسائل
-  List<ChatConversation> _cachedConversations = [];
-  List<ChatMessage> _cachedMessages = [];
+  ChatBloc({required ChatRepository repo}) : _repo = repo, super(const ChatInitial()) {
+    // ✅ التعديل 4: تسجيل معالج الأحداث المختلفة
+    on<LoadConversationsEvent>(_onLoadConvs);
+    on<LoadMessagesEvent>(_onLoadMsgs);
+    on<SendMessageEvent>(_onSendMsg);
+    on<MarkReadEvent>(_onMarkRead);
 
-  ChatBloc({required ChatRepository chatRepository})
-      : _chatRepository = chatRepository,
-        super(const ChatInitial()) {
-    on<LoadConversationsEvent>(_onLoadConversations);
-    on<LoadMessagesEvent>(_onLoadMessages);
-    on<SendMessageEvent>(_onSendMessage);
-    on<MarkMessagesAsReadEvent>(_onMarkMessagesAsRead);
-    on<ClearConversationEvent>(_onClearConversation);
+    // ✅ التعديل 5: إضافة معالج ResetChatEvent - يعيد تعيين الحالة إلى ChatInitial
+    // هذا يمنع خلط بيانات المستخدم السابق مع المستخدم الجديد
+
+
+      on<ResetChatEvent>((event, emit) {
+        print("🔄 Reset chat state");
+        _cachedConversations = [];
+        emit(const ChatInitial());
+      });
+
   }
 
-  // 📍 1. تحميل قائمة المحادثات
-  Future<void> _onLoadConversations(
-      LoadConversationsEvent event,
-      Emitter<ChatState> emit,
-      ) async {
+  List<ChatConversation> _cachedConversations = [];
+
+  // ============================================================
+  // 📥 تحميل قائمة المحادثات
+  // ============================================================
+  Future<void> _onLoadConvs(LoadConversationsEvent event, Emitter<ChatState> emit) async {
     emit(const ChatLoading());
-
     try {
-      final conversations = await _chatRepository.loadConversations(event.userId);
-      _cachedConversations = conversations;
+      final convs = await _repo.loadConversations(
+        userId: event.userId,
+        userType: event.userType,
+      );
 
-      final unreadCount = conversations.fold(0, (sum, conv) => sum + conv.unreadCount);
+      _cachedConversations = convs; // ✅ خزّنها
 
       emit(ConversationsLoaded(
-        conversations: conversations,
-        unreadCount: unreadCount,
+        conversations: convs,
+        unreadCount: convs.fold(0, (s, c) => s + c.unreadCount),
       ));
     } catch (e) {
-      emit(ChatError(message: 'Failed to load conversations: ${e.toString()}'));
+      emit(ChatError(message: 'Failed: ${e.toString()}'));
     }
   }
 
-  // 📍 2. تحميل رسائل محادثة معينة
-  Future<void> _onLoadMessages(
-      LoadMessagesEvent event,
-      Emitter<ChatState> emit,
-      ) async {
+  // ============================================================
+  // 📨 تحميل رسائل محادثة محددة
+  // ============================================================
+  Future<void> _onLoadMsgs(LoadMessagesEvent event, Emitter<ChatState> emit) async {
     emit(const ChatLoading());
-
     try {
-      final messages = await _chatRepository.loadMessages(event.userId, event.otherUserId);
-      _cachedMessages = messages;
-      emit(MessagesLoaded(messages: messages));
+      final msgs = await _repo.loadMessages(
+        userId: event.userId,
+        conversationId: event.conversationId, // ✅ int مباشرة
+        userType: event.userType,
+      );
+      emit(MessagesLoaded(messages: msgs));
     } catch (e) {
-      emit(ChatError(message: 'Failed to load messages: ${e.toString()}'));
+      emit(ChatError(message: 'Failed: ${e.toString()}'));
     }
   }
 
-  // 📍 3. إرسال رسالة جديدة
-  Future<void> _onSendMessage(
+  // ============================================================
+  // 📤 إرسال رسالة
+  // ============================================================
+  Future<void> _onSendMsg(
       SendMessageEvent event,
       Emitter<ChatState> emit,
       ) async {
     try {
-      final success = await _chatRepository.sendMessage(
-        senderId: event.senderId,
-        senderName: event.senderName,
-        receiverId: event.receiverId,
-        receiverName: event.receiverName,
-        message: event.message,
-        imageUrl: event.imageUrl,
-      );
+      print("📤 START SEND MESSAGE");
+      print("🆔 conversationId (int): ${event.conversationId}");
 
-      if (success) {
-        // ✅ إنشاء رسالة جديدة
-        final newMessage = ChatMessage(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          conversationId: '${event.senderId}_${event.receiverId}',
-          senderId: event.senderId,
-          senderName: event.senderName,
-          receiverId: event.receiverId,
-          receiverName: event.receiverName,
+      bool success = false;
+
+      // ============================================================
+      // ✅ إذا المرسل طالب
+      // ============================================================
+      if (event.senderType == UserType.trainee) {
+        print("👨‍🎓 Sending as trainee");
+        print("📚 relatedCourse: ${event.courseId}");
+        print("💬 message: ${event.message}");
+
+        success = await _repo.sendMessageAsTrainee(
+          conversationId: event.conversationId, // ✅ int مباشرة
           message: event.message,
-          timestamp: DateTime.now(),
-          isRead: false,
-          imageUrl: event.imageUrl,
-          courseId: event.courseId,
+        );
+      } else {
+        // ============================================================
+        // ✅ إذا المرسل مدرب
+        // ============================================================
+        print("👩‍🏫 Sending as trainer");
+        print("🆔 conversationId: ${event.conversationId}");
+        print("💬 content: ${event.message}");
+
+        success = await _repo.sendMessageAsTrainer(
+          conversationId: event.conversationId, // ✅ int مباشرة
+          content: event.message,
+        );
+      }
+
+      // ============================================================
+      // ✅ إذا الإرسال نجح
+      // ============================================================
+      if (success) {
+        print("✅ Message sent successfully");
+
+        // تحميل الرسائل المحدثة
+        final msgs = await _repo.loadMessages(
+          userId: event.senderId,
+          conversationId: event.conversationId, // ✅ int مباشرة
+          userType: event.senderType,
         );
 
-        // ✅ إضافة إلى القائمة المؤقتة
-        _cachedMessages.add(newMessage);
-
-        emit(MessageSent(message: newMessage));
+        emit(MessagesLoaded(messages: msgs));
       } else {
-        emit(ChatError(message: 'Failed to send message'));
+        print("❌ Failed to send message");
+        emit(const ChatError(message: 'Failed to send'));
       }
     } catch (e) {
-      emit(ChatError(message: 'Error sending message: ${e.toString()}'));
+      print("❌ SEND ERROR: $e");
+      emit(ChatError(message: 'Error: ${e.toString()}'));
     }
   }
 
-  // 📍 4. تحديث حالة القراءة
-  Future<void> _onMarkMessagesAsRead(
-      MarkMessagesAsReadEvent event,
-      Emitter<ChatState> emit,
-      ) async {
-    try {
-      await _chatRepository.markMessagesAsRead(event.userId, event.otherUserId);
-    } catch (e) {
-      emit(ChatError(message: 'Failed to mark messages as read: ${e.toString()}'));
-    }
-  }
-
-  // 📍 5. مسح محادثة
-  Future<void> _onClearConversation(
-      ClearConversationEvent event,
-      Emitter<ChatState> emit,
-      ) async {
-    try {
-      final success = await _chatRepository.clearConversation(event.userId, event.otherUserId);
-
-      if (success) {
-        _cachedMessages.clear();
-        add(LoadConversationsEvent(userId: event.userId));
-      } else {
-        emit(ChatError(message: 'Failed to clear conversation'));
-      }
-    } catch (e) {
-      emit(ChatError(message: 'Error clearing conversation: ${e.toString()}'));
-    }
+  // ============================================================
+  // ✅ تعليم الرسائل كمقروءة
+  // ============================================================
+  Future<void> _onMarkRead(MarkReadEvent event, Emitter<ChatState> emit) async {
+    await _repo.markMessagesAsRead(event.userId, event.otherUserId);
   }
 }

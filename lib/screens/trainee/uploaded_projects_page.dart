@@ -80,17 +80,16 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
   // 📚 تحميل الكورسات المسجلة
   // ============================================================
   Future<void> _loadRegisteredCourses() async {
-    setState(() => _isLoadingCourses = true);
-
     final authState = context.read<AuthBloc>().state;
+
     if (authState is AuthAuthenticated) {
-      context.read<CourseBloc>().add(LoadRegisteredCoursesEvent(userId: authState.user.id , userType: authState.user.userType,));
+      context.read<CourseBloc>().add(
+        LoadRegisteredCoursesEvent(
+          userId: authState.user.id,
+          userType: authState.user.userType,
+        ),
+      );
     }
-
-    // انتظار تحميل الكورسات من الـ BLoC
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    setState(() => _isLoadingCourses = false);
   }
 
   // ============================================================
@@ -197,7 +196,7 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
       final fields = {
         'course': _selectedCourseId.toString(),
         'course_session': _selectedSessionId.toString(),
-        'session_order': (_selectedSessionOrder ?? 1).toString(),
+        'session_order': (_selectedSessionOrder ?? 0).toString(),
         'title': _titleController.text.trim(),
       };
 

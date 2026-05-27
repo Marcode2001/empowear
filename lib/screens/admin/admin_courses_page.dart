@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import '../../models/course_models.dart';
+import 'admin_course_sessions_screen.dart';
 
 class AdminCoursesScreen extends StatefulWidget {
   const AdminCoursesScreen({super.key});
@@ -240,8 +241,23 @@ class _AdminCoursesScreenState extends State<AdminCoursesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Manage Courses'),
-        backgroundColor: Colors.deepPurple,
+        title: const Text(
+          'Manage Courses',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.deepPurple,
+                Colors.purple,
+              ],
+            ),
+          ),
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -285,24 +301,97 @@ class _AdminCoursesScreenState extends State<AdminCoursesScreen> {
             elevation: 2,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: Colors.deepPurple,
-                child: Text('${course.levelNumber}'),
+
+              // ✅ فتح الجلسات
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AdminCourseSessionsPage(
+                      course: course,
+                    ),
+                  ),
+                );
+              },
+
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      Colors.deepPurple,
+                      Colors.purple,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${course.levelNumber}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
-              title: Text(course.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Row(
+
+              // ✅ عنوان الكورس رجّعناه
+              title: Text(
+                course.title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                  fontSize: 16,
+                ),
+              ),
+
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.attach_money, size: 12, color: Colors.grey[600]),
-                  Text('${course.price}  ', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                  const Icon(Icons.person, size: 12),
-                  Text(course.trainerName, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+
+                  const SizedBox(height: 4),
+
+                  Text(
+                    course.trainerName,
+                    style: const TextStyle(
+                      color: Colors.grey,
+                    ),
+                  ),
+
+                  const SizedBox(height: 4),
+
+                  Text(
+                    '\$${course.price}',
+                    style: const TextStyle(
+                      color: Colors.deepPurple,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete, color: Colors.red),
-                onPressed: () => _deleteCourse(int.parse(course.id)),
+
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 18,
+                    color: Colors.deepPurple,
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  IconButton(
+                    icon: const Icon(
+                      Icons.delete,
+                      color: Colors.red,
+                    ),
+                    onPressed: () =>
+                        _deleteCourse(int.parse(course.id)),
+                  ),
+                ],
               ),
-            ),
+            )
           );
         },
       ),

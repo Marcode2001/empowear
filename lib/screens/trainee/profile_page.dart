@@ -1,4 +1,3 @@
-// 📄 lib/screens/trainee/profile_page.dart
 // ============================================================
 // 👤 Trainee Profile Page - مع تسجيل خروج يعمل بشكل صحيح
 // ============================================================
@@ -6,12 +5,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/auth/auth_bloc.dart';
+// ✅ التعديل: استيراد ChatBloc لاستخدام ResetChatEvent
+import '../../bloc/chat/chat_bloc.dart';
 import '../../bloc/job/job_bloc.dart';
 import '../../bloc/job/job_event.dart';
 import '../../bloc/job/job_state.dart';
 import '../../bloc/project/project_bloc.dart';
 import '../../models/job_models.dart';
 import '../../models/project_models.dart';
+import '../auth/login_screen.dart'; // ✅ استيراد LoginScreen
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -46,7 +48,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (mounted) setState(() => _isRefreshingProjects = false);
   }
 
-  // ✅ دالة تسجيل الخروج المعدلة
+  // ✅ دالة تسجيل الخروج المعدلة مع ResetChatEvent
   Future<void> _logout() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -71,6 +73,11 @@ class _ProfilePageState extends State<ProfilePage> {
     if (confirm == true && mounted) {
       setState(() => _isLoading = true);
       try {
+        // ✅ ✅ ✅ التعديل الأهم: إعادة تعيين ChatBloc قبل تسجيل الخروج
+        // هذا يمنع بقاء بيانات المحادثات القديمة في الذاكرة
+        print("🔄 [ProfilePage] Resetting ChatBloc before logout...");
+        context.read<ChatBloc>().add(const ResetChatEvent());
+
         // ✅ إرسال حدث تسجيل الخروج
         context.read<AuthBloc>().add(const LogoutEvent());
 
@@ -79,13 +86,10 @@ class _ProfilePageState extends State<ProfilePage> {
           const SnackBar(content: Text('Logged out successfully'), backgroundColor: Colors.green),
         );
 
-        // ✅ انتظار قليل ثم العودة إلى شاشة تسجيل الدخول
-        await Future.delayed(const Duration(milliseconds: 500));
-
+        // ✅ الانتقال إلى شاشة تسجيل الدخول باستخدام MaterialPageRoute (بدون named route)
         if (mounted) {
-          // ✅ إزالة جميع الشاشات والانتقال إلى شاشة تسجيل الدخول
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            '/login',
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
                 (route) => false,
           );
         }
@@ -101,6 +105,9 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  // ============================================================
+  // ✅ دالة build الرئيسية
+  // ============================================================
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
@@ -117,8 +124,8 @@ class _ProfilePageState extends State<ProfilePage> {
         if (state is AuthUnauthenticated) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/login',
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
                     (route) => false,
               );
             }
@@ -181,13 +188,16 @@ class _ProfilePageState extends State<ProfilePage> {
                               backgroundColor: Colors.deepPurple,
                               child: Text(
                                 userName.isNotEmpty ? userName[0].toUpperCase() : 'S',
-                                style: const TextStyle(fontSize: 38, fontWeight: FontWeight.bold, color: Colors.white),
+                                style: const TextStyle(
+                                    fontSize: 38, fontWeight: FontWeight.bold, color: Colors.white),
                               ),
                             ),
                           ),
                         ),
                         const SizedBox(height: 12),
-                        Text(userName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                        Text(userName,
+                            style: const TextStyle(
+                                fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
                         const SizedBox(height: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -200,7 +210,9 @@ class _ProfilePageState extends State<ProfilePage> {
                             children: [
                               const Icon(Icons.star, size: 12, color: Colors.amber),
                               const SizedBox(width: 4),
-                              Text('Level ${studentStats['level']}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Colors.white)),
+                              Text('Level ${studentStats['level']}',
+                                  style: const TextStyle(
+                                      fontSize: 11, fontWeight: FontWeight.w500, color: Colors.white)),
                             ],
                           ),
                         ),
@@ -217,13 +229,15 @@ class _ProfilePageState extends State<ProfilePage> {
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     // 📁 Submitted Projects Section
-                    const Text('Submitted Projects', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text('Submitted Projects',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
                     _SubmittedProjectsSection(userId: userId, onRefresh: _onRefreshProjects),
                     const SizedBox(height: 24),
 
                     // 💼 My Applications Section
-                    const Text('My Applications', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text('My Applications',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
                     _MyApplicationsSection(userId: userId),
                     const SizedBox(height: 24),
@@ -247,7 +261,10 @@ class _ProfilePageState extends State<ProfilePage> {
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        gradient: LinearGradient(colors: [Colors.red.shade700, Colors.red.shade500], begin: Alignment.topLeft, end: Alignment.bottomRight),
+        gradient: LinearGradient(
+            colors: [Colors.red.shade700, Colors.red.shade500],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight),
       ),
       child: Material(
         color: Colors.transparent,
@@ -261,7 +278,8 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 Icon(Icons.logout, color: Colors.white, size: 20),
                 SizedBox(width: 10),
-                Text('Sign Out', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                Text('Sign Out',
+                    style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -272,7 +290,7 @@ class _ProfilePageState extends State<ProfilePage> {
 }
 
 // ============================================================
-// 📁 Submitted Projects Section (يبقى كما هو)
+// 📁 Submitted Projects Section (تم التعديل - حذف gradeLetter البنفسجي)
 // ============================================================
 
 class _SubmittedProjectsSection extends StatefulWidget {
@@ -317,7 +335,8 @@ class _SubmittedProjectsSectionState extends State<_SubmittedProjectsSection> {
                   const SizedBox(height: 12),
                   Text('No projects submitted yet', style: TextStyle(color: Colors.grey[600], fontSize: 14)),
                   const SizedBox(height: 8),
-                  Text('Submit a project to see it here', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+                  Text('Submit a project to see it here',
+                      style: TextStyle(color: Colors.grey[400], fontSize: 12)),
                 ],
               ),
             );
@@ -392,7 +411,7 @@ class _SubmittedProjectsSectionState extends State<_SubmittedProjectsSection> {
         statusText = 'Graded';
         break;
       case 'pending':
-        statusColor = Colors.orange;
+        statusColor = Colors.amber;
         statusIcon = Icons.hourglass_empty;
         statusText = 'Pending';
         break;
@@ -453,33 +472,27 @@ class _SubmittedProjectsSectionState extends State<_SubmittedProjectsSection> {
                 const SizedBox(height: 4),
                 if (project.submissionDate != null)
                   Text(
-                    'Submitted: ${_formatDate(project.submissionDate!)}',
+                    'Submitted: ${project.submissionDate != null ? _formatDate(project.submissionDate!) : 'Unknown'}',
                     style: TextStyle(fontSize: 10, color: Colors.grey[500]),
                   ),
-                if (project.grade != null)
-                  Text(
-                    'Grade: ${project.grade!.toInt()}/100',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.deepPurple),
-                  ),
+                // ✅ ✅ ✅ تم التعديل: تم حذف gradeLetter البنفسجي بالكامل من هنا
               ],
             ),
           ),
+          // ✅ تم التعديل: تكبير حجم العلامة في البطاقة الملونة
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
+              color: statusColor.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(24),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(statusIcon, size: 14, color: statusColor),
-                const SizedBox(width: 4),
-                Text(
-                  statusText,
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: statusColor),
-                ),
-              ],
+            child: Text(
+              project.gradeLetter ?? statusText,
+              style: TextStyle(
+                fontSize: 11,  // ✅ تم التكبير من 11 إلى 16
+                fontWeight: FontWeight.bold,
+                color: (project.gradeLetter == 'F') ? Colors.red : statusColor,
+              ),
             ),
           ),
         ],
@@ -493,7 +506,7 @@ class _SubmittedProjectsSectionState extends State<_SubmittedProjectsSection> {
 }
 
 // ============================================================
-// 💼 My Applications Section (يبقى كما هو)
+// 💼 My Applications Section (لم يتغير)
 // ============================================================
 
 class _MyApplicationsSection extends StatefulWidget {
@@ -559,7 +572,8 @@ class _MyApplicationsSectionState extends State<_MyApplicationsSection> {
                   const SizedBox(height: 12),
                   Text('No applications yet', style: TextStyle(color: Colors.grey[600], fontSize: 14)),
                   const SizedBox(height: 8),
-                  Text('Apply for jobs to see them here', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+                  Text('Apply for jobs to see them here',
+                      style: TextStyle(color: Colors.grey[400], fontSize: 12)),
                 ],
               ),
             );
@@ -695,7 +709,7 @@ class _MyApplicationsSectionState extends State<_MyApplicationsSection> {
 }
 
 // ============================================================
-// 📄 All Projects Page (يبقى كما هو)
+// 📄 All Projects Page (لم يتغير)
 // ============================================================
 
 class AllProjectsPage extends StatelessWidget {
@@ -706,7 +720,8 @@ class AllProjectsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('All Projects', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text('All Projects',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.deepPurple,
         centerTitle: true,
         elevation: 0,
@@ -796,7 +811,10 @@ class AllProjectsPage extends StatelessWidget {
           Text(project.description),
           const SizedBox(height: 8),
           if (project.submissionDate != null)
-            Text('Submitted: ${_formatDate(project.submissionDate!)}', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+            Text(
+              'Submitted: ${project.submissionDate != null ? _formatDate(project.submissionDate!) : 'Unknown'}',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
           const SizedBox(height: 8),
           if (project.feedback != null)
             Container(

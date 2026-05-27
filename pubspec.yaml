@@ -13,11 +13,18 @@ dependencies:
   equatable: ^2.0.5
   shared_preferences: ^2.2.2
   http: ^1.1.0  # 👈 أضيفي هذا للاتصال مع الباكند
+  path_provider: ^2.1.0
+  open_file: ^3.3.0
   provider: ^6.1.1
   image_picker: ^1.0.4
   cupertino_icons: ^1.0.8
   url_launcher: ^6.2.5
   webview_flutter: ^4.12.0
+  video_player: ^2.9.1
+  chewie: ^1.10.0
+    # مشغل فيديو متقدم مع تحكمات احترافية
+  model_viewer_plus: ^1.7.0
+  logger: ^2.7.0
 
 dev_dependencies:
   flutter_test:
