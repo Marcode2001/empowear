@@ -47,8 +47,6 @@ class _ChatsListPageState extends State<ChatsListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Gradient AppBar
-
       body: BlocBuilder<ChatBloc, ChatState>(
         builder: (context, state) {
           if (state is ChatLoading) {
@@ -166,6 +164,9 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   List<ChatMessage> _msgs = [];
   bool _loaded = false;
 
+  // Focus node للتحكم بحقل الكتابة والإظهار فوق لوحة المفاتيح
+  final FocusNode _focusNode = FocusNode();
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -235,6 +236,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
           maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
         decoration: BoxDecoration(
+          // 🎨 الحفاظ على لون البابل الأصلي كما هو بدون تغيير
           gradient: LinearGradient(
             colors: isMe
                 ? [Colors.deepPurple, Colors.purple]
@@ -263,9 +265,15 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Gradient AppBar
       appBar: AppBar(
-        title: Text(widget.partnerName),
+        // 🎨 جعل اسم الشخص الذي تتم محادثته باللون الأبيض
+        title: Text(
+          widget.partnerName,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -275,6 +283,8 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
             ),
           ),
         ),
+        // 🏹 تغيير لون سهم الرجوع إلى الأبيض
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Column(
         children: [
@@ -316,51 +326,88 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               ),
             ),
           ),
+          // 🚀 شريط إدخال الكتابة المعدل
           _inputBar(),
         ],
       ),
     );
   }
 
-  // Input bar with proper padding above keyboard
+  // ============================================================
+// 📝 Input bar مع تحسينات لظهوره فوق لوحة المفاتيح
+// ============================================================
   Widget _inputBar() {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 8,
-        right: 8,
-        top: 8,
-        // Add bottom padding that adapts to keyboard height
-        bottom: MediaQuery.of(context).viewInsets.bottom + 8,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _ctrl,
-              decoration: const InputDecoration(
-                hintText: 'Type a message...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(25)),
-                ),
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              ),
-              onSubmitted: (_) => _send(),
-            ),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.send, color: Colors.deepPurple),
-            onPressed: _send,
+    return Container(
+      // إضافة ظل خفيف لتمييز شريط الكتابة
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.2),
+            blurRadius: 4,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
+      child: Padding(
+        padding: const EdgeInsets.only(
+          left: 8,
+          right: 8,
+          top: 4,
+          bottom: 55,  //  المسافة  تحت شريط الكتابة
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                child: TextField(
+                  controller: _ctrl,
+                  focusNode: _focusNode,
+                  maxLines: 4,      // السماح بعدة أسطر
+                  minLines: 1,      // سطر واحد كحد أدنى
+                  decoration: const InputDecoration(
+                    hintText: 'Type a message...',
+                    hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (_) => _send(),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // زر الإرسال مع خلفية دائرية
+            Container(
+              margin: const EdgeInsets.only(bottom: 2), // ✅ مسافة إضافية للزر ليتوسط مع حقل الكتابة
+
+              child: IconButton(
+                icon: const Icon(Icons.send, color: Colors.purple, size: 25),
+
+                onPressed: _send,
+                splashRadius: 24,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
+
 
   @override
   void dispose() {
     _ctrl.dispose();
     _scroll.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 }

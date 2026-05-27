@@ -545,13 +545,21 @@ class _MyApplicationsSectionState extends State<_MyApplicationsSection> {
               duration: const Duration(seconds: 2),
             ),
           );
-          _loadApplications();
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _loadApplications();
+          });
         }
       },
       child: BlocBuilder<JobBloc, JobState>(
         builder: (context, state) {
-          final applications = state is UserApplicationsLoaded ? state.applications : [];
-          final isLoading = state is JobLoading && applications.isEmpty;
+          List<JobApplication> applications = [];
+
+          if (state is UserApplicationsLoaded) {
+            applications = state.applications;
+          } else if (state is JobsLoaded) {
+            applications = state.applications;
+          }
+          final isLoading = state is JobLoading;
 
           if (isLoading) {
             return const Center(

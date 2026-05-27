@@ -23,7 +23,7 @@ class JobBloc extends Bloc<JobEvent, JobState> {
     on<LoadJobsEvent>(_onLoadJobs);
     on<LoadJobDetailEvent>(_onLoadJobDetail);
     on<ApplyForJobEvent>(_onApplyForJobEvent);
-    on<WithdrawApplicationEvent>(_onWithdrawApplication);
+
     on<SearchJobsEvent>(_onSearchJobsEvent);
     on<LoadUserApplicationsEvent>(_onLoadUserApplications);
     on<UpdateApplicationStatusEvent>(_onUpdateApplicationStatus);
@@ -33,17 +33,76 @@ class JobBloc extends Bloc<JobEvent, JobState> {
   // ============================================================
   // 📍 1. تحميل جميع الوظائف
   // ============================================================
+  // ============================================================
+// 📍 1. تحميل جميع الوظائف
+// ============================================================
+  // ============================================================
+// 📍 1. تحميل جميع الوظائف
+// ============================================================
+
   Future<void> _onLoadJobs(
       LoadJobsEvent event,
       Emitter<JobState> emit,
       ) async {
-    emit(const JobLoading());
+
     try {
-      final jobs = await _jobRepository.fetchJobs(category: event.category);
-      _allJobs = jobs;
-      emit(JobsLoaded(jobs: jobs, totalCount: jobs.length));
+
+      // ✅ جلب الوظائف
+      final jobs = await _jobRepository.fetchJobs(
+        category: event.category,
+      );
+
+      // ✅ جلب التقديمات الحالية للمستخدم
+      final applications =
+      await _jobRepository.fetchUserApplications(
+        'current_user',
+      );
+
+      // ✅ تخزينهم محلياً
+      _userApplications = applications;
+
+      // ✅ استخراج IDs الوظائف المقدم عليها
+      final appliedJobIds = applications
+          .map((e) => e.jobId.toString())
+          .toSet();
+
+      print('📌 Applied IDs: $appliedJobIds');
+
+      // ✅ تحديث حالة الوظائف
+      _allJobs = jobs.map((job) {
+
+        final isApplied =
+        appliedJobIds.contains(
+          job.id.toString(),
+        );
+
+        print(
+          '🧪 JOB ${job.id} => isApplied = $isApplied',
+        );
+
+        return job.copyWith(
+          isApplied: isApplied,
+        );
+
+      }).toList();
+
+      // ✅ إرسال البيانات كاملة
+      emit(
+        JobsLoaded(
+          jobs: _allJobs,
+          totalCount: _allJobs.length,
+          applications: _userApplications,
+        ),
+      );
+
     } catch (e) {
-      emit(JobError(message: 'Failed to load jobs: ${e.toString()}'));
+
+      emit(
+        JobError(
+          message:
+          'Failed to load jobs: ${e.toString()}',
+        ),
+      );
     }
   }
 
@@ -108,8 +167,27 @@ class JobBloc extends Bloc<JobEvent, JobState> {
         );
 
         _userApplications = [newApplication, ..._userApplications];
+        // ✅ تحديث الوظائف مباشرة
+        _allJobs = _allJobs.map((job) {
 
-        emit(JobsLoaded(jobs: _allJobs, totalCount: _allJobs.length));
+          if (job.id == event.jobId) {
+
+            return job.copyWith(
+              isApplied: true,
+            );
+          }
+
+          return job;
+
+        }).toList();
+
+        emit(
+          JobsLoaded(
+            jobs: _allJobs,
+            totalCount: _allJobs.length,
+            applications: _userApplications,
+          ),
+        );
         emit(UserApplicationsLoaded(applications: _userApplications));
         emit(JobApplied(message: 'Application submitted!', jobId: event.jobId));
       } else {
@@ -123,37 +201,7 @@ class JobBloc extends Bloc<JobEvent, JobState> {
   // ============================================================
   // 📍 4. سحب التقديم على وظيفة
   // ============================================================
-  Future<void> _onWithdrawApplication(
-      WithdrawApplicationEvent event,
-      Emitter<JobState> emit,
-      ) async {
-    try {
-      final success = await _jobRepository.withdrawApplication(event.jobId, event.userId);
 
-      if (success) {
-        // ✅ تحديث حالة الوظيفة في القائمة المحلية
-        _allJobs = _allJobs.map((job) {
-          if (job.id == event.jobId) {
-            return job.copyWith(isApplied: false);
-          }
-          return job;
-        }).toList();
-
-        // ✅ إزالة طلب التقديم من القائمة المحلية
-        _userApplications = _userApplications
-            .where((app) => app.jobId != event.jobId)
-            .toList();
-
-        emit(JobsLoaded(jobs: _allJobs, totalCount: _allJobs.length));
-        emit(UserApplicationsLoaded(applications: _userApplications));
-        emit(JobWithdrawn(message: 'Application withdrawn!', jobId: event.jobId));
-      } else {
-        emit(JobError(message: 'Failed to withdraw application'));
-      }
-    } catch (e) {
-      emit(JobError(message: 'Error withdrawing application: ${e.toString()}'));
-    }
-  }
 
   // ============================================================
   // 📍 5. البحث عن وظائف
@@ -179,26 +227,84 @@ class JobBloc extends Bloc<JobEvent, JobState> {
       ).toList();
     }
 
-    emit(JobsLoaded(jobs: filteredJobs, totalCount: filteredJobs.length));
+    emit(
+      JobsLoaded(
+        jobs: filteredJobs,
+        totalCount: filteredJobs.length,
+        applications: _userApplications,
+      ),
+    );
   }
 
   // ============================================================
   // 📍 6. تحميل طلبات التقديم للمستخدم
   // ============================================================
+  // ============================================================
+// 📍 6. تحميل طلبات التقديم للمستخدم
+// ============================================================
+  // ============================================================
+// 📍 6. تحميل طلبات التقديم للمستخدم
+// ============================================================
+
   Future<void> _onLoadUserApplications(
       LoadUserApplicationsEvent event,
       Emitter<JobState> emit,
       ) async {
-    emit(const JobLoading());
-    try {
-      final applications = await _jobRepository.fetchUserApplications(event.userId);
-      _userApplications = applications;
-      emit(UserApplicationsLoaded(applications: applications));
-    } catch (e) {
-      print('⚠️ Failed to load applications: $e');
 
-      /// لا نكسر الواجهة
-      emit(UserApplicationsLoaded(applications: []));
+    try {
+
+      // ✅ جلب الطلبات من السيرفر
+      final applications =
+      await _jobRepository.fetchUserApplications(
+        event.userId,
+      );
+
+      // ✅ تخزينها محلياً
+      _userApplications = applications;
+
+      // ✅ استخراج IDs الوظائف
+      final appliedJobIds = applications
+          .map((e) => e.jobId.toString())
+          .toSet();
+
+      // ✅ تحديث حالة الوظائف
+      _allJobs = _allJobs.map((job) {
+
+        return job.copyWith(
+          isApplied: appliedJobIds.contains(
+            job.id.toString(),
+          ),
+        );
+
+      }).toList();
+
+      // ✅ إرسال الحالتين معاً
+      emit(
+        JobsLoaded(
+          jobs: _allJobs,
+          totalCount: _allJobs.length,
+          applications: _userApplications,
+        ),
+      );
+
+      emit(
+        UserApplicationsLoaded(
+          applications: _userApplications,
+        ),
+      );
+
+    } catch (e) {
+
+      print(
+        '❌ LoadUserApplications Error: $e',
+      );
+
+      emit(
+        JobError(
+          message:
+          'Failed to load applications',
+        ),
+      );
     }
   }
 
@@ -238,18 +344,63 @@ class JobBloc extends Bloc<JobEvent, JobState> {
   }
 
   // ============================================================
-  // 📍 8. تحديث قائمة طلبات التقديم
   // ============================================================
+// 📍 8. تحديث قائمة طلبات التقديم
+// ============================================================
+
   Future<void> _onRefreshUserApplications(
       RefreshUserApplicationsEvent event,
       Emitter<JobState> emit,
       ) async {
+
     try {
-      final applications = await _jobRepository.refreshUserApplications(event.userId);
+
+      final applications =
+      await _jobRepository.refreshUserApplications(
+        event.userId,
+      );
+
       _userApplications = applications;
-      emit(UserApplicationsLoaded(applications: applications));
+
+      // ✅ IDs
+      final appliedJobIds = applications
+          .map((e) => e.jobId.toString())
+          .toSet();
+
+      // ✅ تحديث الوظائف
+      _allJobs = _allJobs.map((job) {
+
+        return job.copyWith(
+          isApplied:
+          appliedJobIds.contains(
+            job.id.toString(),
+          ),
+        );
+
+      }).toList();
+
+      emit(
+        JobsLoaded(
+          jobs: _allJobs,
+          totalCount: _allJobs.length,
+          applications: _userApplications,
+        ),
+      );
+
+      emit(
+        UserApplicationsLoaded(
+          applications: _userApplications,
+        ),
+      );
+
     } catch (e) {
-      emit(JobError(message: 'Failed to refresh: ${e.toString()}'));
+
+      emit(
+        JobError(
+          message:
+          'Failed to refresh applications',
+        ),
+      );
     }
   }
 

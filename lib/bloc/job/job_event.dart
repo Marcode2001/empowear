@@ -15,9 +15,18 @@ abstract class JobEvent extends Equatable {
 // 📍 1. حدث تحميل جميع الوظائف
 class LoadJobsEvent extends JobEvent {
   final String? category;
-  const LoadJobsEvent({this.category});
+  final String userId;
+
+  const LoadJobsEvent({
+    this.category,
+    required this.userId,
+  });
+
   @override
-  List<Object?> get props => [category];
+  List<Object?> get props => [
+    category,
+    userId,
+  ];
 }
 
 // 📍 2. حدث تحميل تفاصيل وظيفة
@@ -50,19 +59,7 @@ class ApplyForJobEvent extends JobEvent {
   List<Object?> get props => [jobId, userId, userName, userEmail];
 }
 
-// 📍 4. حدث سحب التقديم على وظيفة
-class WithdrawApplicationEvent extends JobEvent {
-  final String jobId;
-  final String userId;
 
-  const WithdrawApplicationEvent({
-    required this.jobId,
-    required this.userId,
-  });
-
-  @override
-  List<Object?> get props => [jobId, userId];
-}
 
 // 📍 5. حدث البحث عن وظائف
 class SearchJobsEvent extends JobEvent {

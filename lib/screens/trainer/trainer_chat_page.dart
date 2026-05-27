@@ -152,6 +152,7 @@ class TrainerChatDetailPage extends StatefulWidget {
 class _TrainerChatDetailPageState extends State<TrainerChatDetailPage> {
   final _ctrl = TextEditingController();
   final _scroll = ScrollController();
+  final FocusNode _focusNode = FocusNode(); // ✅ إضافة FocusNode
   List<ChatMessage> _msgs = [];
   bool _loaded = false;
 
@@ -252,9 +253,15 @@ class _TrainerChatDetailPageState extends State<TrainerChatDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Gradient AppBar
       appBar: AppBar(
-        title: Text(widget.studentName),
+        // 🎨 جعل اسم الطالب باللون الأبيض
+        title: Text(
+          widget.studentName,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -264,8 +271,9 @@ class _TrainerChatDetailPageState extends State<TrainerChatDetailPage> {
             ),
           ),
         ),
+        // 🏹 تغيير لون سهم الرجوع إلى الأبيض
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -309,43 +317,76 @@ class _TrainerChatDetailPageState extends State<TrainerChatDetailPage> {
               ),
             ),
           ),
+          // 🚀 شريط إدخال الكتابة المعدل (نفس تصميم trainee)
           _inputBar(),
         ],
       ),
     );
   }
 
-  // Input bar with proper padding above keyboard
+  // ============================================================
+  // 📝 Input bar مع تحسينات مثل trainee (bottom padding 55)
+  // ============================================================
   Widget _inputBar() {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 8,
-        right: 8,
-        top: 8,
-        // Bottom padding adapts to keyboard height (moves input above keyboard)
-        bottom: MediaQuery.of(context).viewInsets.bottom + 8,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _ctrl,
-              decoration: const InputDecoration(
-                hintText: 'Type a message...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(25)),
-                ),
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              ),
-              onSubmitted: (_) => _send(),
-            ),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.send, color: Colors.deepPurple),
-            onPressed: _send,
+    return Container(
+      // إضافة ظل خفيف لتمييز شريط الكتابة
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.2),
+            blurRadius: 4,
+            offset: const Offset(0, -2),
           ),
         ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.only(
+          left: 8,
+          right: 8,
+          top: 4,
+          bottom: 55,  // ✅ المسافة تحت شريط الكتابة (نفس trainee)
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                child: TextField(
+                  controller: _ctrl,
+                  focusNode: _focusNode,
+                  maxLines: 4,      // السماح بعدة أسطر
+                  minLines: 1,      // سطر واحد كحد أدنى
+                  decoration: const InputDecoration(
+                    hintText: 'Type a message...',
+                    hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (_) => _send(),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // زر الإرسال مع خلفية دائرية
+            Container(
+              margin: const EdgeInsets.only(bottom: 2), // ✅ مسافة إضافية للزر ليتوسط مع حقل الكتابة
+              child: IconButton(
+                icon: const Icon(Icons.send, color: Colors.purple, size: 25),
+                onPressed: _send,
+                splashRadius: 24,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -354,6 +395,7 @@ class _TrainerChatDetailPageState extends State<TrainerChatDetailPage> {
   void dispose() {
     _ctrl.dispose();
     _scroll.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 }

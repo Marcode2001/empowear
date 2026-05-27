@@ -15,20 +15,38 @@ abstract class JobState extends Equatable {
 // الحالة الابتدائية
 class JobInitial extends JobState {
   const JobInitial();
+
+  @override
+  List<Object?> get props => [];
 }
 
 // حالة التحميل
 class JobLoading extends JobState {
   const JobLoading();
+
+  @override
+  List<Object?> get props => [];
 }
 
 // تم تحميل الوظائف
 class JobsLoaded extends JobState {
+
   final List<JobModel> jobs;
   final int totalCount;
-  const JobsLoaded({required this.jobs, required this.totalCount});
+  final List<JobApplication> applications;
+
+  const JobsLoaded({
+    required this.jobs,
+    required this.totalCount,
+    this.applications = const [],
+  });
+
   @override
-  List<Object?> get props => [jobs, totalCount];
+  List<Object?> get props => [
+    jobs,
+    totalCount,
+    applications,
+  ];
 }
 
 // تم تحميل تفاصيل وظيفة
@@ -48,14 +66,7 @@ class JobApplied extends JobState {
   List<Object?> get props => [message, jobId];
 }
 
-// تم سحب التقديم
-class JobWithdrawn extends JobState {
-  final String message;
-  final String jobId;
-  const JobWithdrawn({required this.message, required this.jobId});
-  @override
-  List<Object?> get props => [message, jobId];
-}
+
 
 // تم تحميل طلبات التقديم للمستخدم
 class UserApplicationsLoaded extends JobState {

@@ -294,6 +294,7 @@ class ChatRepository {
       final saved = prefs.getString(key);
       String lastMsg = conv.lastMessage;
 
+
       if (saved != null && saved.isNotEmpty) {
         try {
           final decoded = jsonDecode(saved);
