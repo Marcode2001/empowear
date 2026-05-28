@@ -1,6 +1,7 @@
 //admin_home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'admin_certificates_page.dart';
 import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/job/job_bloc.dart';
 import '../../bloc/job/job_event.dart';
@@ -328,6 +329,21 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     builder: (_) => const AdminCoursesScreen(),
                   ),
                 ),
+              ),
+            ),
+            Expanded(
+              child: _buildManagementCard(
+                title: 'Certificates',
+                icon: Icons.card_membership,
+                color: Colors.purple,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AdminCertificatesPage(),
+                    ),
+                  );
+                },
               ),
             ),
             const SizedBox(width: 12),

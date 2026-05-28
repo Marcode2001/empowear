@@ -15,6 +15,8 @@ import 'bloc/project/project_bloc.dart';
 import 'bloc/chat/chat_bloc.dart';
 import 'bloc/job/job_bloc.dart';
 import 'bloc/previous_student_work/previous_student_work_bloc.dart';
+import 'bloc/certificate/certificate_bloc.dart';
+import 'repositories/certificate_repository.dart';
 
 import 'repositories/course_repository.dart';
 import 'repositories/project_repository.dart';
@@ -77,6 +79,10 @@ class MyApp extends StatelessWidget {
           create: (_) =>
               JobBloc(jobRepository: JobRepository()),
         ),
+
+        BlocProvider(
+          create: (_) => CertificateBloc(CertificateRepository()),
+        ),
       ],
 
       child: MaterialApp(
@@ -95,6 +101,8 @@ class MyApp extends StatelessWidget {
       ),
     );
   }
+
+
 }
 
 // ============================================================

@@ -219,10 +219,6 @@ class ApiService {
   // 📥 طلب GET
   // ============================================================
 
-  // ============================================================
-// 📥 طلب GET
-// ============================================================
-
   static Future<Map<String, dynamic>> get({
     required String endpoint,
     bool requireAuth = true,
@@ -257,6 +253,8 @@ class ApiService {
       ).timeout(
         const Duration(seconds: timeoutSeconds),
       );
+      print("STATUS: ${response.statusCode}");
+      print("BODY: ${response.body}");
 
       // ========================================================
       // ✅ طباعة معلومات الطلب للتصحيح
@@ -338,6 +336,8 @@ class ApiService {
         headers: headers,
         body: json.encode(data),
       ).timeout(const Duration(seconds: timeoutSeconds));
+      print("STATUS: ${response.statusCode}");
+      print("BODY: ${response.body}");
 
       // 🔹 معالجة حالة 401
       if (response.statusCode == 401 && requireAuth && retryCount == 0) {
@@ -511,4 +511,5 @@ class ApiService {
     await clearTokens();
     print('✅ [API] تم تسجيل الخروج بنجاح');
   }
+
 }

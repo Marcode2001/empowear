@@ -9,6 +9,10 @@ import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/course/course_bloc.dart';
 import '../../bloc/course/course_event.dart';
 import '../../bloc/course/course_state.dart';
+
+import '../../bloc/certificate/certificate_bloc.dart';
+import '../../bloc/certificate/certificate_event.dart';
+
 import '../../models/course_models.dart';
 import '../../repositories/course_repository.dart';
 import 'content_viewer_page.dart';
@@ -278,6 +282,44 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
               ],
             ),
             const SizedBox(height: 12),
+
+            SizedBox(
+              width: double.infinity,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Colors.deepPurple, Colors.purple],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ElevatedButton(
+                  onPressed: () {
+                    final levelNumber = course.levelNumber;
+
+                    if (levelNumber == null) {
+                      print("❌ levelNumber is null");
+                      return;
+                    }
+
+                    context.read<CertificateBloc>().add(
+                      GetCertificateByLevelEvent(levelNumber),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    "Get Certificate",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -287,6 +329,7 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
           ],
         ),
       ),
+
     );
   }
 }

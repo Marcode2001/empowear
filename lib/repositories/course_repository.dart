@@ -211,6 +211,127 @@ class CourseRepository {
   }
 
   // ============================================================
+// 📄 جلب محتوى كورس للمدرب
+// ============================================================
+  Future<List<CourseContent>> getTrainerCourseContent(String courseId) async {
+    try {
+      final courseIdInt = int.tryParse(courseId) ?? 0;
+
+      final response = await ApiService.get(
+        endpoint: 'course-content/trainer-search-by-course-id/$courseIdInt/',
+        requireAuth: true,
+      );
+
+      if (response['success']) {
+        final rawData = response['data'] ?? response;
+        final List<dynamic> data = rawData is List ? rawData : [];
+
+        return data.map((json) => CourseContent.fromJson(json)).toList();
+      }
+
+      return [];
+    } catch (e) {
+      print('❌ [REPO] خطأ في جلب محتوى المدرب: $e');
+      return [];
+    }
+  }
+
+  // ============================================================
+// 📄 جلب محتوى جلسة معينة للمدرب
+// ============================================================
+  Future<List<CourseContent>> getTrainerSessionContent(
+      String courseId,
+      int sessionOrder,
+      ) async {
+    try {
+      final courseIdInt = int.tryParse(courseId) ?? 0;
+
+      final response = await ApiService.get(
+        endpoint:
+        'course-content/trainer-search-by-course-id-and-session-order/$courseIdInt/$sessionOrder/',
+        requireAuth: true,
+      );
+
+      if (response['success']) {
+        final rawData = response['data'] ?? response;
+        final List<dynamic> data = rawData is List ? rawData : [];
+
+        return data.map((json) => CourseContent.fromJson(json)).toList();
+      }
+
+      return [];
+    } catch (e) {
+      print('❌ [REPO] خطأ في جلب محتوى الجلسة: $e');
+      return [];
+    }
+  }
+
+  // ============================================================
+// ⭐ ربط جلسات المدرب مع المحتوى
+// ============================================================
+  Future<List<Session>> getTrainerSessionsWithContent(
+      String courseId,
+      ) async {
+    try {
+      final sessions = await getTrainerCourseSessions(courseId);
+
+      if (sessions.isEmpty) return [];
+
+      List<Session> updatedSessions = [];
+
+      for (var session in sessions) {
+        final contents = await getTrainerSessionContent(
+          courseId,
+          session.sessionOrder ?? 0,
+        );
+
+        updatedSessions.add(
+          Session(
+            id: session.id,
+            course: session.course,
+            courseTitle: session.courseTitle,
+            title: session.title,
+            description: session.description,
+            sessionOrder: session.sessionOrder,
+            contents: contents,
+          ),
+        );
+      }
+
+      return updatedSessions;
+    } catch (e) {
+      print('❌ [REPO] خطأ بربط جلسات المدرب: $e');
+      return [];
+    }
+  }
+
+  // ============================================================
+// 📚 جلب جلسات كورس للمدرب
+// ============================================================
+  Future<List<Session>> getTrainerCourseSessions(String courseId) async {
+    try {
+      final courseIdInt = int.tryParse(courseId) ?? 0;
+
+      final response = await ApiService.get(
+        endpoint: 'course-session/trainer-search-by-course-id/$courseIdInt/',
+        requireAuth: true,
+      );
+
+      if (response['success']) {
+        final rawData = response['data'] ?? response;
+        final List<dynamic> data = rawData is List ? rawData : [];
+
+        return data.map((json) => Session.fromJson(json)).toList();
+      }
+
+      return [];
+    } catch (e) {
+      print('❌ [REPO] خطأ في جلب جلسات المدرب: $e');
+      return [];
+    }
+  }
+
+  // ============================================================
   // 📊 دوال وهمية (لا تؤثر على النظام)
   // ============================================================
   Future<bool> updateProgress(String userId, String courseId, int progress) async => true;

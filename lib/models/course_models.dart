@@ -8,19 +8,17 @@ import 'package:flutter/material.dart';
 // ============================================================
 // 📚 نموذج محتوى الكورس (CourseContent)
 // ============================================================
-// هذا النموذج يمثل ملفاً واحداً (PDF، فيديو، صورة) داخل الجلسة
 
 class CourseContent {
-  final int id;                    // المعرف الفريد للمحتوى (رقم من قاعدة البيانات)
-  final int course;                // معرف الكورس التابع له
-  final int courseSession;         // معرف الجلسة التابعة لها
-  final int sessionOrder;          // ترتيب الجلسة (1,2,3...)
-  final String title;              // عنوان المحتوى (مثل "الدرس 1")
-  final String contentType;        // نوع الملف: 'PDF', 'VIDEO', 'IMAGE'
-  final int contentOrder;          // ترتيب المحتوى داخل الجلسة
-  final String? fileUrl;           // رابط الملف (مثل /media/files/lesson1.pdf)
+  final int id;
+  final int course;
+  final int courseSession;
+  final int sessionOrder;
+  final String title;
+  final String contentType;
+  final int contentOrder;
+  final String? fileUrl;
 
-  // 🏗️ الكونستركتور - ينشئ كائن CourseContent
   CourseContent({
     required this.id,
     required this.course,
@@ -32,20 +30,15 @@ class CourseContent {
     this.fileUrl,
   });
 
-  // ✅ تحويل JSON (من الخادم) إلى كائن CourseContent
   factory CourseContent.fromJson(Map<String, dynamic> json) {
-    // نطبع في الكونسول لنرى الرابط القادم من الخادم
-    print('📄 [CourseContent] تحويل: ${json['title']}');
-
-    // محاولة قراءة الرابط من عدة حقول محتملة
     String? fileUrlValue;
+
     if (json['file'] != null && json['file'].toString().isNotEmpty) {
       fileUrlValue = json['file'].toString();
-    } else if (json['file_url'] != null && json['file_url'].toString().isNotEmpty) {
+    } else if (json['file_url'] != null &&
+        json['file_url'].toString().isNotEmpty) {
       fileUrlValue = json['file_url'].toString();
     }
-
-    print('   📁 الرابط: $fileUrlValue');
 
     return CourseContent(
       id: json['id'] ?? 0,
@@ -59,70 +52,69 @@ class CourseContent {
     );
   }
 
-  // ✅ دوال مساعدة للواجهة
   String get type => contentType.toLowerCase();
   bool get hasFile => fileUrl != null && fileUrl!.isNotEmpty;
   String get duration => '${(contentOrder * 5).clamp(5, 60)} min';
 
-  // ✅ أيقونة مناسبة حسب نوع المحتوى
   IconData get icon {
     switch (type) {
-      case 'pdf': return Icons.picture_as_pdf;
-      case 'video': return Icons.video_library;
-      case 'image': return Icons.image;
-      default: return Icons.insert_drive_file;
+      case 'pdf':
+        return Icons.picture_as_pdf;
+      case 'video':
+        return Icons.video_library;
+      case 'image':
+        return Icons.image;
+      default:
+        return Icons.insert_drive_file;
     }
   }
 
-  // ✅ لون مناسب حسب نوع المحتوى
   Color get color {
     switch (type) {
-      case 'pdf': return Colors.red;
-      case 'video': return Colors.blue;
-      case 'image': return Colors.green;
-      default: return Colors.grey;
+      case 'pdf':
+        return Colors.red;
+      case 'video':
+        return Colors.blue;
+      case 'image':
+        return Colors.green;
+      default:
+        return Colors.grey;
     }
   }
 
-  // ✅ بناء الرابط الكامل (مع معالجة صحيحة لملفات الـ media)
   String get fullUrl {
     if (!hasFile) return '';
 
-    // إذا كان الرابط كاملاً بالفعل (يبدأ بـ http)
     if (fileUrl!.startsWith('http')) {
       return fileUrl!;
     }
 
-    // بناء الرابط الأساسي للسيرفر
     const baseUrl = 'http://192.168.1.22:8000';
 
-    // التأكد من أن المسار يبدأ بـ /
     String relativePath = fileUrl!;
     if (!relativePath.startsWith('/')) {
       relativePath = '/$relativePath';
     }
 
-    // إذا كان المسار يبدأ بـ /media/، نضيفه مباشرة
     if (relativePath.startsWith('/media/')) {
       return '$baseUrl$relativePath';
     }
 
-    // وإلا نضيف /media/ قبله (لأن الملفات في مجلد media)
     return '$baseUrl/media$relativePath';
   }
 }
 
 // ============================================================
-// 📋 نموذج الدرس (Lesson) - للواجهة فقط
+// 📋 نموذج الدرس
 // ============================================================
 
 class Lesson {
-  final String id;           // معرف الدرس (نص)
-  final String title;        // عنوان الدرس
-  final String duration;     // المدة (مثل "10 min")
-  final String type;         // النوع: 'video', 'pdf', 'image'
-  final String url;          // رابط الملف الكامل
-  final bool isCompleted;    // هل تم إكمال الدرس؟
+  final String id;
+  final String title;
+  final String duration;
+  final String type;
+  final String url;
+  final bool isCompleted;
 
   Lesson({
     required this.id,
@@ -133,7 +125,6 @@ class Lesson {
     this.isCompleted = false,
   });
 
-  // ✅ تحويل من CourseContent إلى Lesson
   factory Lesson.fromCourseContent(CourseContent content) {
     return Lesson(
       id: content.id.toString(),
@@ -147,19 +138,18 @@ class Lesson {
 }
 
 // ============================================================
-// 📋 نموذج الجلسة (Session)
+// 📋 نموذج الجلسة
 // ============================================================
 
 class Session {
-  final int id;                    // معرف الجلسة
-  final int course;                // معرف الكورس
-  final String courseTitle;        // عنوان الكورس
-  final String title;              // عنوان الجلسة
-  final String description;        // وصف الجلسة
-  final int? sessionOrder;         // ترتيب الجلسة (1,2,3...)
-  final List<CourseContent> contents;  // محتويات الجلسة (الدروس)
+  final int id;
+  final int course;
+  final String courseTitle;
+  final String title;
+  final String description;
+  final int? sessionOrder;
+  final List<CourseContent> contents;
 
-  // 🏗️ الكونستركتور
   Session({
     required this.id,
     required this.course,
@@ -170,51 +160,48 @@ class Session {
     this.contents = const [],
   });
 
-  // ✅ تحويل JSON إلى كائن Session
   factory Session.fromJson(Map<String, dynamic> json) {
-    final List<dynamic> contentsData = json['contents'] ?? json['course_content'] ?? [];
+    final List<dynamic> contentsData =
+        json['contents'] ?? json['course_content'] ?? [];
 
     return Session(
       id: json['id'] ?? 0,
       course: json['course'] ?? 0,
       courseTitle: json['course_title'] ?? 'كورس غير معروف',
-      title: json['session_title'] ?? json['title'] ?? 'جلسة بدون عنوان',
+      title: json['session_title'] ?? 'جلسة بدون عنوان',
       description: json['description'] ?? '',
       sessionOrder: json['session_order'],
-      contents: contentsData.map((c) => CourseContent.fromJson(c)).toList(),
+      contents:
+      contentsData.map((c) => CourseContent.fromJson(c)).toList(),
     );
   }
 
-  // ✅ عدد المحتويات في الجلسة
   int get lessonsCount => contents.length;
 
-  // ✅ تحويل قائمة CourseContent إلى قائمة Lesson للواجهة
-  List<Lesson> get curriculum {
-    return contents.map((content) => Lesson.fromCourseContent(content)).toList();
-  }
+  List<Lesson> get curriculum =>
+      contents.map((c) => Lesson.fromCourseContent(c)).toList();
 }
 
 // ============================================================
-// 🎓 نموذج الكورس (CourseItem)
+// 🎓 نموذج الكورس
 // ============================================================
 
 class CourseItem {
-  final String id;                 // معرف الكورس (نص)
-  final String title;              // عنوان الكورس
-  final String description;        // وصف الكورس
-  final int levelNumber;           // رقم المستوى
-  final String courseType;         // نوع الكورس
-  final String price;              // السعر
-  final String toolsRequired;      // الأدوات المطلوبة
-  final int trainerProfile;        // معرف المدرب
-  final String trainerName;        // اسم المدرب
-  final int studentsCount;         // عدد الطلاب
-  final String totalHours;         // المدة الكلية
-  final List<Session> sessions;    // قائمة الجلسات
-  final bool isRegistered;         // هل الطالب مسجل؟
-  final int progress;              // نسبة التقدم
+  final String id;
+  final String title;
+  final String description;
+  final int levelNumber;
+  final String courseType;
+  final String price;
+  final String toolsRequired;
+  final int trainerProfile;
+  final String trainerName;
+  final int studentsCount;
+  final String totalHours;
+  final List<Session> sessions;
+  final bool isRegistered;
+  final int progress;
 
-  // 🏗️ الكونستركتور
   CourseItem({
     required this.id,
     required this.title,
@@ -232,7 +219,6 @@ class CourseItem {
     this.progress = 0,
   });
 
-  // ✅ تحويل JSON إلى كائن CourseItem
   factory CourseItem.fromJson(Map<String, dynamic> json) {
     final List<dynamic> sessionsData = json['sessions'] ?? [];
 
@@ -242,14 +228,9 @@ class CourseItem {
         : (priceValue?.toString() ?? '0');
 
     String trainerName = '';
+
     if (json['trainer_full_name'] != null) {
       trainerName = json['trainer_full_name'];
-    } else if (json['trainerName'] != null) {
-      trainerName = json['trainerName'];
-    } else if (json['trainer_profile'] is Map) {
-      trainerName = json['trainer_profile']['full_name'] ?? 'مدرب غير معروف';
-    } else if (json['trainer_profile'] is int) {
-      trainerName = 'مدرب رقم ${json['trainer_profile']}';
     } else {
       trainerName = 'مدرب غير معروف';
     }
@@ -258,29 +239,29 @@ class CourseItem {
       id: json['id']?.toString() ?? '',
       title: json['title'] ?? 'كورس بدون عنوان',
       description: json['description'] ?? '',
-      levelNumber: json['level_number'] ?? json['levelNumber'] ?? 1,
-      courseType: json['course_type'] ?? json['courseType'] ?? 'عام',
+      levelNumber: json['level_number'] ?? 1,
+      courseType: json['course_type'] ?? 'عام',
       price: priceString,
-      toolsRequired: json['tools_required'] ?? json['toolsRequired'] ?? '',
-      trainerProfile: json['trainer_profile'] is Map
-          ? (json['trainer_profile']['id'] ?? 0)
-          : (json['trainer_profile'] ?? 0),
+      toolsRequired: json['tools_required'] ?? '',
+      trainerProfile: json['trainer_profile'] ?? 0,
       trainerName: trainerName,
-      studentsCount: json['studentsCount'] ?? json['students_count'] ?? 0,
-      totalHours: json['totalHours'] ?? json['total_hours'] ?? '0h',
+
+      // 🔥 FIX الأساسي
+      studentsCount:
+      json['current_enrolled_students_count'] ?? 0,
+
+      totalHours: json['totalHours'] ?? '0h',
       sessions: sessionsData.map((s) => Session.fromJson(s)).toList(),
       isRegistered: json['is_registered'] ?? false,
       progress: json['progress'] ?? 0,
     );
   }
 
-  // ✅ عدد الجلسات في الكورس
   int get sessionsCount => sessions.length;
 
-  // ✅ إجمالي عدد الدروس في كل الجلسات
-  int get totalLessons => sessions.fold(0, (sum, s) => sum + s.lessonsCount);
+  int get totalLessons =>
+      sessions.fold(0, (sum, s) => sum + s.lessonsCount);
 
-  // ✅ دالة copyWith - لإنشاء نسخة جديدة من الكورس مع تعديل بعض الحقول
   CourseItem copyWith({
     String? id,
     String? title,
