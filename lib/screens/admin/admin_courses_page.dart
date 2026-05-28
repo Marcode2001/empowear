@@ -248,6 +248,11 @@ class _AdminCoursesScreenState extends State<AdminCoursesScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
+        // ✅ تغيير لون سهم الرجوع إلى الأبيض
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -301,7 +306,6 @@ class _AdminCoursesScreenState extends State<AdminCoursesScreen> {
             elevation: 2,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: ListTile(
-
               // ✅ فتح الجلسات
               onTap: () {
                 Navigator.push(
@@ -313,7 +317,6 @@ class _AdminCoursesScreenState extends State<AdminCoursesScreen> {
                   ),
                 );
               },
-
               leading: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
@@ -333,8 +336,7 @@ class _AdminCoursesScreenState extends State<AdminCoursesScreen> {
                   ),
                 ),
               ),
-
-              // ✅ عنوان الكورس رجّعناه
+              // ✅ عنوان الكورس
               title: Text(
                 course.title,
                 style: const TextStyle(
@@ -343,44 +345,36 @@ class _AdminCoursesScreenState extends State<AdminCoursesScreen> {
                   fontSize: 16,
                 ),
               ),
-
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
                   const SizedBox(height: 4),
-
                   Text(
                     course.trainerName,
                     style: const TextStyle(
                       color: Colors.grey,
                     ),
                   ),
-
                   const SizedBox(height: 4),
-
+                  // ✅ تغيير لون السعر إلى الأخضر
                   Text(
                     '\$${course.price}',
                     style: const TextStyle(
-                      color: Colors.deepPurple,
+                      color: Colors.green,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
-
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-
                   const Icon(
                     Icons.arrow_forward_ios,
                     size: 18,
                     color: Colors.deepPurple,
                   ),
-
                   const SizedBox(width: 8),
-
                   IconButton(
                     icon: const Icon(
                       Icons.delete,
@@ -391,14 +385,15 @@ class _AdminCoursesScreenState extends State<AdminCoursesScreen> {
                   ),
                 ],
               ),
-            )
+            ),
           );
         },
       ),
+      // ✅ تغيير لون علامة الزائد إلى الأبيض
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddDialog,
         backgroundColor: Colors.deepPurple,
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }

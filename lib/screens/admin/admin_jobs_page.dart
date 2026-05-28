@@ -44,7 +44,6 @@ class _AdminJobsScreenState extends State<AdminJobsScreen> {
               .toList();
         });
       } else {
-        // إذا لم يكن هناك endpoint خاص، نستخدم بيانات افتراضية
         setState(() {
           _jobs = [];
         });
@@ -274,8 +273,25 @@ class _AdminJobsScreenState extends State<AdminJobsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Job Opportunities'),
-        backgroundColor: Colors.deepPurple,
+        title: const Text(
+          'Job Opportunities',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        // ✅ تغيير لون سهم الرجوع إلى الأبيض
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.deepPurple, Colors.purple],
+            ),
+          ),
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -331,6 +347,7 @@ class _AdminJobsScreenState extends State<AdminJobsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(job.company, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  const SizedBox(height: 4),
                   Text(
                     job.description,
                     maxLines: 2,
@@ -356,10 +373,11 @@ class _AdminJobsScreenState extends State<AdminJobsScreen> {
           );
         },
       ),
+      // ✅ تغيير لون علامة الزائد إلى الأبيض
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddEditDialog(),
         backgroundColor: Colors.deepPurple,
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }

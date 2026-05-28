@@ -1,5 +1,4 @@
-//admin_home_screen
-
+//admin_home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/auth/auth_bloc.dart';
@@ -8,6 +7,7 @@ import '../../bloc/job/job_event.dart';
 import '../../bloc/job/job_state.dart';
 import '../../bloc/project/project_bloc.dart';
 import '../../services/api_service.dart';
+import '../auth/login_screen.dart';
 
 import 'admin_jobs_page.dart';
 import 'admin_projects_page.dart';
@@ -26,6 +26,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   int _totalJobs = 0;
   int _totalProjects = 0;
   bool _isLoading = true;
+  bool _isLoggingOut = false;
 
   @override
   void initState() {
@@ -36,26 +37,27 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   Future<void> _loadDashboardData() async {
     setState(() => _isLoading = true);
 
+    // ✅ الحصول على userId من AuthBloc
     final authState = context.read<AuthBloc>().state;
-
-    String userId = '';
-
+    String? userId;
     if (authState is AuthAuthenticated) {
       userId = authState.user.id;
     }
 
-    context.read<JobBloc>().add(
-      LoadJobsEvent(userId: userId),
-    );
+    // ✅ تحميل البيانات من JobBloc مع تمرير userId
+    if (userId != null) {
+      context.read<JobBloc>().add(LoadJobsEvent(userId: userId));
+    }
 
+    // ✅ تحميل المشاريع
     context.read<ProjectBloc>().add(const LoadFeaturedProjectsEvent());
 
+    // تحميل الكورسات مباشرة من API
     try {
       final coursesRes = await ApiService.get(
         endpoint: 'course/admin-all-courses/',
         requireAuth: true,
       );
-
       if (coursesRes['success'] == true && coursesRes['data'] is List) {
         _totalCourses = (coursesRes['data'] as List).length;
       }
@@ -66,61 +68,317 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     setState(() => _isLoading = false);
   }
 
+  // ✅ دالة تسجيل الخروج
   Future<void> _logout() async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Logout'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Logout', style: TextStyle(fontWeight: FontWeight.bold)),
         content: const Text('Are you sure you want to logout?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Logout'),
           ),
         ],
       ),
     );
 
-    if (confirm != true) return;
+    if (confirm == true && mounted) {
+      setState(() => _isLoggingOut = true);
+      try {
+        // ✅ إرسال حدث تسجيل الخروج
+        context.read<AuthBloc>().add(const LogoutEvent());
 
-    context.read<AuthBloc>().add(const LogoutEvent());
+        // ✅ عرض رسالة نجاح
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Logged out successfully'), backgroundColor: Colors.green),
+        );
+
+        // ✅ الانتقال إلى شاشة تسجيل الدخول
+        if (mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+                (route) => false,
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isLoggingOut = false);
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final authState = context.watch<AuthBloc>().state;
-
     String adminName = 'Admin';
     if (authState is AuthAuthenticated) {
       adminName = authState.user.name;
     }
 
+    // مراقبة حالة JobBloc
     final jobState = context.watch<JobBloc>().state;
     if (jobState is JobsLoaded) {
       _totalJobs = jobState.totalCount;
     }
 
+    // مراقبة حالة ProjectBloc
     final projectState = context.watch<ProjectBloc>().state;
     if (projectState is FeaturedProjectsLoaded) {
       _totalProjects = projectState.projects.length;
     }
 
+    // ✅ إذا كان المستخدم غير مسجل، اخرج من هذه الشاشة
+    if (authState is AuthUnauthenticated) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+                (route) => false,
+          );
+        }
+      });
+      return const SizedBox.shrink();
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin Dashboard'),
+        title: const Text('Admin Dashboard', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        centerTitle: true,
+        // ✅ زر Logout في الـ AppBar فقط
         actions: [
           IconButton(
             onPressed: _logout,
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.logout, color: Colors.white),
+            tooltip: 'Logout',
+          ),
+        ],
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(colors: [Colors.deepPurple, Colors.purple]),
+          ),
+        ),
+      ),
+      body: _isLoggingOut
+          ? const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(color: Colors.deepPurple),
+            SizedBox(height: 16),
+            Text('Logging out...'),
+          ],
+        ),
+      )
+          : RefreshIndicator(
+        onRefresh: _loadDashboardData,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildWelcomeCard(adminName),
+              const SizedBox(height: 24),
+              _buildStatsRow(),
+              const SizedBox(height: 24),
+              const Text('Management', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              // ✅ مربعات الإدارة بنفس تصميم واجهة الطالب (2x2)
+              _buildManagementGrid(),
+              const SizedBox(height: 30),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWelcomeCard(String name) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [Colors.deepPurple, Colors.purple]),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Welcome Back 👑', style: TextStyle(color: Colors.white, fontSize: 16)),
+              const SizedBox(height: 8),
+              Text(name, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
+                child: const Text('Administrator', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
+            child: const Icon(Icons.admin_panel_settings, color: Colors.white, size: 50),
           ),
         ],
       ),
-      body: const Center(child: Text('Dashboard')),
+    );
+  }
+
+  Widget _buildStatsRow() {
+    return Row(
+      children: [
+        _buildStatCard(Icons.menu_book, 'Courses', _totalCourses.toString(), Colors.deepPurple),
+        const SizedBox(width: 12),
+        _buildStatCard(Icons.work, 'Jobs', _totalJobs.toString(), Colors.teal),
+        const SizedBox(width: 12),
+        _buildStatCard(Icons.folder_special, 'Projects', _totalProjects.toString(), Colors.orange),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(IconData icon, String label, String value, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 8, spreadRadius: 2),
+          ],
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 8),
+            Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: color)),
+            Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ✅ دالة بناء شبكة الإدارة (2x2) مثل واجهة الطالب
+  Widget _buildManagementGrid() {
+    return Column(
+      children: [
+        // الصف الأول: Job Opportunities + Students Project
+        Row(
+          children: [
+            Expanded(
+              child: _buildManagementCard(
+                title: 'Job\nOpportunities',
+                icon: Icons.work,
+                color: Colors.teal,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AdminJobsScreen(),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildManagementCard(
+                title: 'Students\nProject',
+                icon: Icons.folder_special,
+                color: Colors.orange,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AdminProjectsScreen(),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // الصف الثاني: Courses + Job Applications
+        Row(
+          children: [
+            Expanded(
+              child: _buildManagementCard(
+                title: 'Courses',
+                icon: Icons.library_books,
+                color: Colors.deepPurple,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AdminCoursesScreen(),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildManagementCard(
+                title: 'Job\nApplications',
+                icon: Icons.assignment_turned_in,
+                color: Colors.green,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AdminApplicationsScreen(),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ✅ بطاقة الإدارة بنفس تصميم واجهة الطالب
+  Widget _buildManagementCard({
+    required String title,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 100,
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.3), width: 1),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 32),
+            const SizedBox(height: 6),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -27,16 +27,29 @@ class _TrainerCurriculumPageState extends State<TrainerCurriculumPage> {
   }
 
   Future<void> _loadSessions() async {
+    if (!mounted) return;
+
     setState(() => _isLoading = true);
+
     try {
-      final sessions = await CourseRepository().getCourseSessionsWithContent(widget.course.id);
+      final sessions = await CourseRepository()
+          .getCourseSessionsWithContent(widget.course.id);
+
+      if (!mounted) return;
+
       setState(() {
-        _sessions = sessions;
+        _sessions = sessions ?? [];
         _isLoading = false;
       });
     } catch (e) {
-      print('❌ Error loading sessions: $e');
-      setState(() => _isLoading = false);
+      debugPrint('❌ Error loading sessions: $e');
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+        _sessions = [];
+      });
     }
   }
 
@@ -44,7 +57,13 @@ class _TrainerCurriculumPageState extends State<TrainerCurriculumPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.course.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text(
+          widget.course.title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: Colors.deepPurple,
         centerTitle: true,
         elevation: 0,
@@ -53,18 +72,26 @@ class _TrainerCurriculumPageState extends State<TrainerCurriculumPage> {
           onPressed: () => Navigator.pop(context),
         ),
         flexibleSpace: Container(
-          decoration: const BoxDecoration(gradient: LinearGradient(colors: [Colors.deepPurple, Colors.purple])),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.deepPurple, Colors.purple],
+            ),
+          ),
         ),
       ),
       body: Column(
         children: [
-          // رأس الكورس
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Colors.deepPurple, Colors.purple]),
-              borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(30), bottomRight: Radius.circular(30)),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.deepPurple, Colors.purple],
+              ),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
+              ),
             ),
             child: Column(
               children: [
@@ -75,18 +102,29 @@ class _TrainerCurriculumPageState extends State<TrainerCurriculumPage> {
                     color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Icon(Icons.menu_book, color: Colors.white, size: 40),
+                  child: const Icon(
+                    Icons.menu_book,
+                    color: Colors.white,
+                    size: 40,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   widget.course.title,
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
                   textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   '${widget.course.sessionsCount} Sessions',
-                  style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.9)),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white.withOpacity(0.9),
+                  ),
                 ),
               ],
             ),
@@ -98,7 +136,13 @@ class _TrainerCurriculumPageState extends State<TrainerCurriculumPage> {
               children: [
                 Icon(Icons.list_alt, color: Colors.deepPurple),
                 SizedBox(width: 8),
-                Text('Curriculum', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(
+                  'Curriculum',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
           ),
@@ -111,9 +155,19 @@ class _TrainerCurriculumPageState extends State<TrainerCurriculumPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.video_library_outlined, size: 64, color: Colors.grey[400]),
+                  Icon(
+                    Icons.video_library_outlined,
+                    size: 64,
+                    color: Colors.grey,
+                  ),
                   const SizedBox(height: 16),
-                  Text('No sessions available', style: TextStyle(color: Colors.grey[600], fontSize: 16)),
+                  Text(
+                    'No sessions available',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 16,
+                    ),
+                  ),
                 ],
               ),
             )
@@ -121,8 +175,7 @@ class _TrainerCurriculumPageState extends State<TrainerCurriculumPage> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: _sessions.length,
               itemBuilder: (context, index) {
-                final session = _sessions[index];
-                return _buildSessionCard(session);
+                return _buildSessionCard(_sessions[index]);
               },
             ),
           ),
@@ -134,45 +187,62 @@ class _TrainerCurriculumPageState extends State<TrainerCurriculumPage> {
   Widget _buildSessionCard(Session session) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: ExpansionTile(
         leading: Container(
           width: 45,
           height: 45,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(colors: [Colors.deepPurple, Colors.purple]),
-            borderRadius: BorderRadius.circular(12),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.deepPurple, Colors.purple],
+            ),
+            borderRadius: BorderRadius.all(Radius.circular(12)),
           ),
-          child: const Icon(Icons.video_library, color: Colors.white, size: 24),
+          child: const Icon(
+            Icons.video_library,
+            color: Colors.white,
+            size: 24,
+          ),
         ),
         title: Text(
           session.title,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 4),
             Text(
-              session.description.isNotEmpty ? session.description : 'No description',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              session.description.isNotEmpty
+                  ? session.description
+                  : 'No description',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
             const SizedBox(height: 4),
             Text(
               '${session.lessonsCount} lessons',
-              style: TextStyle(fontSize: 11, color: Colors.deepPurple),
+              style: const TextStyle(
+                fontSize: 11,
+                color: Colors.deepPurple,
+              ),
             ),
           ],
         ),
         children: session.contents.isEmpty
-            ? [
-          const Padding(
+            ? const [
+          Padding(
             padding: EdgeInsets.all(16),
             child: Text('No content available for this session'),
           )
         ]
-            : session.contents.map((content) => _buildContentCard(content)).toList(),
+            : session.contents
+            .map((content) => _buildContentCard(content))
+            .toList(),
       ),
     );
   }
@@ -195,14 +265,21 @@ class _TrainerCurriculumPageState extends State<TrainerCurriculumPage> {
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               gradient: isVideo
-                  ? const LinearGradient(colors: [Colors.deepPurple, Colors.purple])
-                  : (isPdf
-                  ? const LinearGradient(colors: [Colors.red, Colors.deepOrange])
-                  : const LinearGradient(colors: [Colors.blue, Colors.lightBlue])),
+                  ? const LinearGradient(
+                  colors: [Colors.deepPurple, Colors.purple])
+                  : isPdf
+                  ? const LinearGradient(
+                  colors: [Colors.red, Colors.deepOrange])
+                  : const LinearGradient(
+                  colors: [Colors.blue, Colors.lightBlue]),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
-              isVideo ? Icons.play_arrow : (isPdf ? Icons.picture_as_pdf : Icons.insert_drive_file),
+              isVideo
+                  ? Icons.play_arrow
+                  : isPdf
+                  ? Icons.picture_as_pdf
+                  : Icons.insert_drive_file,
               color: Colors.white,
               size: 20,
             ),
@@ -212,35 +289,52 @@ class _TrainerCurriculumPageState extends State<TrainerCurriculumPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(content.title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: isVideo ? Colors.deepPurple.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                Text(
+                  content.title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
                   ),
-                  child: Text(
-                    content.contentType.toUpperCase(),
-                    style: TextStyle(fontSize: 10, color: isVideo ? Colors.deepPurple : Colors.grey[700], fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  content.contentType.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey.shade700,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8,
+            ),
             decoration: BoxDecoration(
               gradient: isVideo
-                  ? const LinearGradient(colors: [Colors.deepPurple, Colors.purple])
-                  : (isPdf
-                  ? const LinearGradient(colors: [Colors.red, Colors.deepOrange])
-                  : const LinearGradient(colors: [Colors.blue, Colors.lightBlue])),
+                  ? const LinearGradient(
+                  colors: [Colors.deepPurple, Colors.purple])
+                  : isPdf
+                  ? const LinearGradient(
+                  colors: [Colors.red, Colors.deepOrange])
+                  : const LinearGradient(
+                  colors: [Colors.blue, Colors.lightBlue]),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              isVideo ? 'Watch' : (isPdf ? 'View PDF' : 'Open'),
-              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+              isVideo
+                  ? 'Watch'
+                  : isPdf
+                  ? 'View PDF'
+                  : 'Open',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],

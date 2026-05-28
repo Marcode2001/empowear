@@ -100,3 +100,12 @@ class CalculateOverallProgressEvent extends CourseEvent {
   @override
   List<Object?> get props => [userId, userType];
 }
+
+class LoadTrainerCoursesEvent extends CourseEvent {
+  final String trainerId;
+
+  const LoadTrainerCoursesEvent({required this.trainerId});
+
+  @override
+  List<Object?> get props => [trainerId];
+}

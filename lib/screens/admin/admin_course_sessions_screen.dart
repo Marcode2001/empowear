@@ -187,9 +187,19 @@ class _AdminCourseSessionsPageState
   Widget build(BuildContext context) {
 
     return Scaffold(
-//title: Text(widget.course.title),
       appBar: AppBar(
-        title: Text(widget.course.title),
+        title: Text(
+          widget.course.title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        // ✅ تغيير لون سهم الرجوع إلى الأبيض
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -202,9 +212,11 @@ class _AdminCourseSessionsPageState
         ),
       ),
 
+      // ✅ تغيير لون علامة الزائد إلى الأبيض
       floatingActionButton: FloatingActionButton(
         onPressed: createSession,
-        child: const Icon(Icons.add),
+        backgroundColor: Colors.deepPurple,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
 
       body: isLoading
@@ -212,51 +224,49 @@ class _AdminCourseSessionsPageState
         child: CircularProgressIndicator(),
       )
           : ListView.builder(
-
         itemCount: sessions.length,
-
         itemBuilder: (_, index) {
-
           final session = sessions[index];
-
           return Card(
-
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: ListTile(
-
               // ✅ اسم الجلسة
               title: Text(
                 session['session_title'] ?? '',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-
               // ✅ ترتيب الجلسة
               subtitle: Text(
                 'Order: ${session['session_order']}',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                ),
               ),
-
               // ✅ فتح المحتوى
               onTap: () {
-
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) =>
-                        AdminCourseContentsPage(
-                          courseId:
-                          widget.course.id,
-                          session: session,
-                        ),
+                    builder: (_) => AdminCourseContentsPage(
+                      courseId: widget.course.id,
+                      session: session,
+                    ),
                   ),
                 );
               },
-
               // ✅ حذف الجلسة
               trailing: IconButton(
                 icon: const Icon(
                   Icons.delete,
                   color: Colors.red,
                 ),
-                onPressed: () =>
-                    deleteSession(session['id']),
+                onPressed: () => deleteSession(session['id']),
               ),
             ),
           );

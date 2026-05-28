@@ -26,7 +26,26 @@ class CourseBloc extends Bloc<CourseEvent, CourseState> {
     on<LoadCourseContentEvent>(_onLoadCourseContent);
     on<ToggleLessonCompletionEvent>(_onToggleLessonCompletion);
     on<CalculateOverallProgressEvent>(_onCalculateOverallProgress);
+    on<LoadTrainerCoursesEvent>(_onLoadTrainerCourses);
   }
+
+  Future<void> _onLoadTrainerCourses(
+      LoadTrainerCoursesEvent event,
+      Emitter<CourseState> emit,
+      ) async {
+    emit(const CourseLoading());
+
+    try {
+      final courses =
+      await _courseRepository.loadTrainerCourses(event.trainerId);
+
+      emit(AvailableCoursesLoaded(availableCourses: courses));
+    } catch (e) {
+      emit(CourseError(message: e.toString()));
+    }
+  }
+
+
 
   // 📥 1. تحميل الكورسات المسجل فيها
   Future<void> _onLoadRegisteredCourses(

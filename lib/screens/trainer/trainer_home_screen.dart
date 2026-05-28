@@ -12,6 +12,7 @@ import '../../services/api_service.dart';
 import 'trainer_chat_page.dart';
 import 'receive_student_projects_page.dart';
 import 'trainer_profile_page.dart';
+import 'trainer_courses_main_page.dart';
 
 // ============================================================
 // 🏠 القسم 1: شاشة التنقل الرئيسية (Bottom Navigation)
@@ -275,14 +276,42 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
             ),
             const SizedBox(height: 24),
 
-            // قسم الكورسات
-            const Text(
-              'My Courses',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            // ============================================================
+            // 📚 قسم "My Courses" مع زر "See All" (مثل صفحة الطالب)
+            // ============================================================
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'My Courses',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                // زر "See All" يظهر فقط إذا في كورسات
+                if (_courses.isNotEmpty && !_isLoading)
+                  GestureDetector(
+                    onTap: () {
+                      // ✅ الانتقال لصفحة الكورسات الرئيسية للمدرب
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const TrainerCoursesMainPage(),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      'See All',
+                      style: TextStyle(
+                        color: Colors.deepPurple,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 12),
 
-            // قائمة الكورسات
+            // قائمة الكورسات (مثل تصميم الطالب)
             if (_isLoading)
               const Center(
                 child: Padding(
@@ -318,6 +347,7 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
                   decoration: BoxDecoration(
                     color: Colors.grey.shade50,
                     borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.grey.shade200),
                   ),
                   child: const Column(
                     children: [
@@ -336,7 +366,8 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
                   ),
                 )
               else
-                ..._courses.map((course) => _buildCourseCard(course)),
+              // ✅ عرض أول 3 كورسات فقط في الصفحة الرئيسية (مثل الطالب)
+                ..._courses.take(3).map((course) => _buildCourseCard(course)),
           ],
         ),
       ),
@@ -387,89 +418,115 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
             Text(title, style: TextStyle(color: c, fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
             Text(sub, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-            if (_totalPendingProjects > 0)
-              Container(
-                margin: const EdgeInsets.only(top: 12),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '$_totalPendingProjects pending',
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                ),
-              ),
           ],
         ),
       ),
     );
   }
 
+  // ✅ دالة بناء بطاقة الكورس (مثل تصميم الطالب)
   Widget _buildCourseCard(CourseItem course) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 55,
-            height: 55,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Colors.deepPurple, Colors.purple],
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Center(
-              child: Icon(Icons.menu_book, color: Colors.white, size: 28),
+    return GestureDetector(
+      onTap: () {
+        // ✅ عند الضغط على الكورس، ننتقل لصفحة الكورسات الرئيسية مع تمرير الكورس المحدد
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TrainerCoursesMainPage(
+              selectedCourseId: course.id,
             ),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  course.title,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 8,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // 🖼️ أيقونة الكورس
+            Container(
+              width: 55,
+              height: 55,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Colors.deepPurple, Colors.purple],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '${course.studentsCount} students',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Center(
+                child: Icon(Icons.menu_book, color: Colors.white, size: 28),
+              ),
+            ),
+            const SizedBox(width: 16),
+
+            // 📝 معلومات الكورس
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    course.title,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  // عدد الطلاب
+                  Row(
+                    children: [
+                      Icon(Icons.people_outline, size: 12, color: Colors.grey[600]),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${course.studentsCount} students',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  // عدد الجلسات
+                  Row(
+                    children: [
+                      Icon(Icons.video_library, size: 11, color: Colors.grey[500]),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${course.sessions.length} sessions',
+                        style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // 🏷️ شارة المستوى
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Colors.deepPurple, Colors.purple],
                 ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Colors.deepPurple, Colors.purple],
+                borderRadius: BorderRadius.circular(15),
               ),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: Text(
-              'Level ${course.levelNumber}',
-              style: const TextStyle(
-                fontSize: 11,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+              child: Text(
+                'Level ${course.levelNumber}',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

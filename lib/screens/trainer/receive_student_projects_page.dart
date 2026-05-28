@@ -82,6 +82,11 @@ class _ReceiveStudentProjectsPageState extends State<ReceiveStudentProjectsPage>
         backgroundColor: Colors.deepPurple,
         centerTitle: true,
         elevation: 0,
+        // 🏹 تغيير لون سهم الرجوع إلى الأبيض
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(colors: [Colors.deepPurple, Colors.purple]),
@@ -253,7 +258,13 @@ class _ReceiveStudentProjectsPageState extends State<ReceiveStudentProjectsPage>
                 return GestureDetector(
                   onTap: () {
                     setModalState(() {
-                      selectedGrade = grade;
+                      // ✅ إذا كانت الدرجة محددة بالفعل، قم بإلغاء تحديدها
+                      // ✅ وإلا قم بتحديد الدرجة الجديدة
+                      if (selectedGrade == grade) {
+                        selectedGrade = null; // إلغاء التحديد
+                      } else {
+                        selectedGrade = grade; // تحديد الدرجة الجديدة
+                      }
                     });
                   },
                   child: Container(

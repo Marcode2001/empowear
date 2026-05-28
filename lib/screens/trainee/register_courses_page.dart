@@ -2,6 +2,7 @@
 // ============================================================
 // 📝 صفحة تسجيل الكورسات (Register Courses Page)
 // ✅ بدون زر Unregister - بعد الدفع لا يمكن إلغاء التسجيل
+// ✅ الكورسات غير المسجلة محتواها مقفول
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -87,10 +88,14 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
             setState(() {
               registeredIds.add(course.id);
 
-              // ✅ تحديث حالة الكورس في القائمة
-              final index = availableCourses.indexWhere((c) => c.id == course.id);
+              final index =
+              availableCourses.indexWhere((c) => c.id == course.id);
+
               if (index != -1) {
-                availableCourses[index] = availableCourses[index].copyWith(isRegistered: true);
+                availableCourses[index] =
+                    availableCourses[index].copyWith(
+                      isRegistered: true,
+                    );
               }
             });
 
@@ -108,6 +113,11 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
   }
 
   void _toggleCourseExpansion(String courseId) {
+    final isRegistered = _isCourseRegistered(courseId);
+
+    // ✅ فقط الكورسات المسجلة يمكن توسيعها
+    if (!isRegistered) return;
+
     setState(() {
       if (_expandedCourseId == courseId) {
         _expandedCourseId = null;
@@ -147,6 +157,10 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
         backgroundColor: Colors.deepPurple,
         centerTitle: true,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
         flexibleSpace: Container(
           decoration: const BoxDecoration(gradient: LinearGradient(colors: [Colors.deepPurple, Colors.purple])),
         ),
@@ -254,8 +268,6 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
                   ),
                 ),
                 // ✅ زر التسجيل فقط - بدون زر إلغاء التسجيل
-                // إذا كان مسجلاً: يظهر نص "Enrolled" (غير قابل للضغط)
-                // إذا كان غير مسجل: يظهر زر "Register" (قابل للضغط)
                 if (isRegistered)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -306,101 +318,76 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
                   course.totalHours != '0h' ? course.totalHours : 'Not specified',
                   style: TextStyle(fontSize: 12, color: course.totalHours != '0h' ? Colors.grey[600] : Colors.red),
                 ),
-                IconButton(
-                  icon: Icon(isExpanded ? Icons.expand_less : Icons.expand_more, color: Colors.deepPurple),
-                  onPressed: () => _toggleCourseExpansion(course.id),
-                ),
+                // ✅ أيقونة التوسع - فقط للكورسات المسجلة تكون قابلة للضغط
+                if (isRegistered)
+                  IconButton(
+                    icon: Icon(isExpanded ? Icons.expand_less : Icons.expand_more, color: Colors.deepPurple),
+                    onPressed: () => _toggleCourseExpansion(course.id),
+                  )
+                else
+                // ✅ للكورسات غير المسجلة: أيقونة مقفلة وغير قابلة للضغط
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    child: Icon(Icons.lock, size: 18, color: Colors.grey[400]),
+                  ),
               ],
             ),
           ),
-          // Expanded sessions
-          if (isExpanded) ...[
+          // ✅ Expanded sessions - فقط للكورسات المسجلة
+          if (isExpanded && isRegistered) ...[
             const Divider(height: 1),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
-                  Icon(Icons.video_library, size: 16, color: isRegistered ? Colors.deepPurple : Colors.grey),
+                  Icon(Icons.video_library, size: 16, color: Colors.deepPurple),
                   const SizedBox(width: 8),
-                  Text(
-                    isRegistered ? 'Course Sessions' : 'Register to access course sessions',
+                  const Text(
+                    'Course Sessions',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: isRegistered ? Colors.deepPurple : Colors.grey,
+                      color: Colors.deepPurple,
                     ),
                   ),
                 ],
               ),
             ),
-            if (isRegistered) ...[
-              FutureBuilder<List<Session>>(
-                future: _cachedSessions.containsKey(course.id)
-                    ? Future.value(_cachedSessions[course.id])
-                    : _fetchSessions(course.id),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  }
-                  if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-                    return Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          Icon(Icons.error_outline, size: 40, color: Colors.grey[400]),
-                          const SizedBox(height: 8),
-                          Text(
-                            'No sessions available for this course',
-                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                  final sessions = snapshot.data!;
-                  if (!_cachedSessions.containsKey(course.id)) {
-                    _cachedSessions[course.id] = sessions;
-                  }
-                  return Column(
-                    children: sessions.map((session) => _buildSessionTile(session, course)).toList(),
+            FutureBuilder<List<Session>>(
+              future: _cachedSessions.containsKey(course.id)
+                  ? Future.value(_cachedSessions[course.id])
+                  : _fetchSessions(course.id),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(child: CircularProgressIndicator()),
                   );
-                },
-              ),
-            ] else ...[
-              Container(
-                margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: Column(
-                  children: [
-                    Icon(Icons.lock_outline, size: 48, color: Colors.grey[400]),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Register to access sessions and content',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                }
+                if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        Icon(Icons.error_outline, size: 40, color: Colors.grey[400]),
+                        const SizedBox(height: 8),
+                        Text(
+                          'No sessions available for this course',
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => _proceedToPayment(course),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepPurple,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                      ),
-                      child: const Text('Register Now'),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+                  );
+                }
+                final sessions = snapshot.data!;
+                if (!_cachedSessions.containsKey(course.id)) {
+                  _cachedSessions[course.id] = sessions;
+                }
+                return Column(
+                  children: sessions.map((session) => _buildSessionTile(session, course)).toList(),
+                );
+              },
+            ),
           ],
           // Footer
           Container(
@@ -417,7 +404,7 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
                     Icon(Icons.school, size: 16, color: isRegistered ? Colors.deepPurple : Colors.grey),
                     const SizedBox(width: 4),
                     Text(
-                      isRegistered ? '${_cachedSessions[course.id]?.length ?? 0} Sessions' : 'Locked',
+                      isRegistered ? '${_cachedSessions[course.id]?.length ?? 0} Sessions' : 'Locked - Register to access',
                       style: TextStyle(fontSize: 12, color: isRegistered ? Colors.deepPurple : Colors.grey),
                     ),
                   ],
@@ -500,17 +487,17 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
                 ),
                 const SizedBox(height: 12),
                 if (session.contents.isEmpty)
-                  Center(
+                  const Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(16),
                       child: Text(
                         'No content available for this session yet',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                        style: TextStyle(fontSize: 12),
                       ),
                     ),
                   )
                 else
-                  ...session.contents.map((content) => _buildContentTile(content)),
+                  ...session.contents.map((content) => _buildContentTile(content)).toList(),
               ],
             ),
           ),

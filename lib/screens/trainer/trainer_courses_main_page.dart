@@ -39,7 +39,11 @@ class _TrainerCoursesMainPageState extends State<TrainerCoursesMainPage> {
   void _loadCourses() {
     final authState = context.read<AuthBloc>().state;
     if (authState is AuthAuthenticated) {
-      context.read<CourseBloc>().add(LoadRegisteredCoursesEvent(userId: authState.user.id , userType: authState.user.userType,));
+      context.read<CourseBloc>().add(
+        LoadTrainerCoursesEvent(
+          trainerId: authState.user.id,
+        ),
+      );
     }
   }
 
@@ -77,9 +81,9 @@ class _TrainerCoursesMainPageState extends State<TrainerCoursesMainPage> {
       ),
       body: BlocListener<CourseBloc, CourseState>(
         listener: (context, state) {
-          if (state is RegisteredCoursesLoaded) {
+          if (state is AvailableCoursesLoaded) {
             setState(() {
-              _courses = state.registeredCourses;
+              _courses = state.availableCourses;
               _isLoading = false;
             });
           } else if (state is CourseError) {

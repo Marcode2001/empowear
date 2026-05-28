@@ -67,7 +67,8 @@ class _PaymentPageState extends State<PaymentPage> {
         final data = existingResponse['data'];
         if (data is List) {
           for (var request in data) {
-            if (request['course'] == courseIdInt) {
+            if (request['course'] == courseIdInt &&
+                request['status'] == 'Pending')  {
               _enrollmentRequestId = request['id'];
               print('✅ Found existing request: $_enrollmentRequestId');
               return;
@@ -173,7 +174,9 @@ class _PaymentPageState extends State<PaymentPage> {
 
       setState(() => _isProcessing = false);
 
-      if (response['success']) {
+      if (response['statusCode'] == 200 ||
+          response['statusCode'] == 201) {
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Payment successful! Course registered 🎉'),
@@ -182,19 +185,13 @@ class _PaymentPageState extends State<PaymentPage> {
           ),
         );
 
-        // ✅ تحديث قائمة الكورسات
-        final authState = context.read<AuthBloc>().state;
-        if (authState is AuthAuthenticated) {
-          context.read<CourseBloc>().add(LoadRegisteredCoursesEvent(userId: authState.user.id , userType: authState.user.userType,));
-          context.read<CourseBloc>().add(LoadAvailableCoursesEvent(userId: authState.user.id , userType: authState.user.userType,));
-        }
-
         widget.onPaymentSuccess();
 
         if (mounted) {
           Navigator.pop(context);
         }
-      } else {
+
+      }  else {
         String errorMessage = 'Payment failed';
         final data = response['data'];
         if (data is Map<String, dynamic>) {
