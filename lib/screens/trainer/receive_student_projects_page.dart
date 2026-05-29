@@ -189,19 +189,36 @@ class _ReceiveStudentProjectsPageState extends State<ReceiveStudentProjectsPage>
                 ),
                 const SizedBox(height: 16),
                 if (imageUrl.isNotEmpty)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      'http://192.168.1.22:8000$imageUrl',
-                      height: 150,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        height: 150,
-                        color: Colors.grey.shade200,
-                        child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
-                      ),
-                    ),
+                  Builder(
+                    builder: (context) {
+
+                      final fullImageUrl = imageUrl.startsWith('http')
+                          ? imageUrl
+                          : 'http://192.168.1.22:8000$imageUrl';
+
+                      print('🖼️ IMAGE URL: $fullImageUrl');
+
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          fullImageUrl,
+                          height: 150,
+                          width: double.infinity,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            print('❌ IMAGE ERROR: $error');
+
+                            return Container(
+                              height: 150,
+                              color: Colors.grey.shade200,
+                              child: const Center(
+                                child: Icon(Icons.broken_image, color: Colors.grey),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
                   ),
                 const SizedBox(height: 16),
                 if (!isEvaluated)

@@ -13,8 +13,11 @@ import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/course/course_bloc.dart';
 import '../../bloc/course/course_event.dart';
 import '../../bloc/course/course_state.dart';
+import '../../bloc/chat/chat_bloc.dart';
+import '../../models/user_model.dart';
 import '../../models/course_models.dart';
 import '../../repositories/course_repository.dart';
+import '../../repositories/chat_repository.dart';
 
 class RegisterCoursesPage extends StatefulWidget {
   final Function(List<CourseItem>)? onRegister;
@@ -62,7 +65,12 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
   }
 
   bool _isCourseRegistered(String courseId) {
-    return registeredIds.contains(courseId);
+    final courseState = context.read<CourseBloc>().state;
+
+    if (courseState is RegisteredCoursesLoaded) {
+      return courseState.registeredCourses.any((c) => c.id == courseId);
+    }
+    return false;
   }
 
   // ============================================================
@@ -83,15 +91,41 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
       MaterialPageRoute(
         builder: (context) => PaymentPage(
           course: course,
-          onPaymentSuccess: () {
-            // ✅ تحديث محلي فقط - بدون إعادة تحميل من API
+          onPaymentSuccess: () async {
+
+            // =====================================================
+            // ✅ إنشاء محادثة تلقائياً بعد التسجيل بالكورس
+            // =====================================================
+
+            try {
+
+              final chatRepo = ChatRepository();
+
+              final result = await chatRepo.createConversationForTrainee(
+                int.parse(course.id),
+              );
+
+              print("💬 CREATE CONVERSATION RESULT:");
+              print(result);
+
+            } catch (e) {
+
+              print("❌ CREATE CONVERSATION ERROR: $e");
+            }
+
+            // =====================================================
+            // ✅ تحديث الواجهة
+            // =====================================================
+
             setState(() {
+
               registeredIds.add(course.id);
 
               final index =
               availableCourses.indexWhere((c) => c.id == course.id);
 
               if (index != -1) {
+
                 availableCourses[index] =
                     availableCourses[index].copyWith(
                       isRegistered: true,
@@ -100,11 +134,31 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
             });
 
             if (widget.onRegister != null) {
+
               widget.onRegister!([course]);
             }
 
+            // =====================================================
+            // ✅ تحديث قائمة المحادثات مباشرة
+            // =====================================================
+
+            final auth = context.read<AuthBloc>().state;
+
+            if (auth is AuthAuthenticated) {
+
+              context.read<ChatBloc>().add(
+                LoadConversationsEvent(
+                  userId: auth.user.id,
+                  userType: UserType.trainee,
+                ),
+              );
+            }
+
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Course registered successfully! 🎉'), backgroundColor: Colors.green),
+              const SnackBar(
+                content: Text('Course registered successfully! 🎉'),
+                backgroundColor: Colors.green,
+              ),
             );
           },
         ),

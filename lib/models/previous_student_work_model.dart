@@ -1,6 +1,5 @@
 ///models/previous_student_work_model.dart
 class PreviousStudentWork {
-
   final int id;
   final String designerName;
   final String imageUrl;
@@ -12,11 +11,8 @@ class PreviousStudentWork {
   });
 
   factory PreviousStudentWork.fromJson(Map<String, dynamic> json) {
-
     return PreviousStudentWork(
-
       id: json['id'],
-
       designerName: json['designer_name'] ?? '',
 
       imageUrl:

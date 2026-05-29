@@ -15,11 +15,12 @@ import 'package:http_parser/http_parser.dart';
 
 class ApiService {
   // 🌐 رابط الـ API الأساسي
-  // ⚠️ مهم: غيّر هذا العنوان حسب جهازك أو السيرفر الفعلي
+  // ⚠️ للبيت:  http://192.168.1.22:8000/api
+  // ⚠️ للكافيه (عبر USB): http://localhost:8000/api
   static const String baseUrl = 'http://192.168.1.22:8000/api';
 
-  // ⏱️ مهلة الانتظار للطلبات (بالثواني)
-  static const int timeoutSeconds = 30;
+  // مهلة الانتظار للطلبات (بالثواني)
+  static const int timeoutSeconds = 60;
 
   // ============================================================
   // 🔑 دوال إدارة التوكنات
@@ -228,7 +229,6 @@ class ApiService {
     int retryCount = 0,
   }) async {
     try {
-
       // ========================================================
       // 🔹 بناء رابط الـ API
       // ========================================================
@@ -277,23 +277,19 @@ class ApiService {
       if (response.statusCode == 401 &&
           requireAuth &&
           retryCount == 0) {
-
         print('🔄 [API] التوكن منتهي - محاولة تجديد');
 
         final refreshed = await _refreshAccessToken();
 
         // ✅ إذا نجح التجديد نعيد الطلب
         if (refreshed) {
-
           return await get(
             endpoint: endpoint,
             requireAuth: requireAuth,
             queryParams: queryParams,
             retryCount: 1,
           );
-
         } else {
-
           // ❌ إذا فشل التجديد
           await clearTokens();
 
@@ -301,8 +297,7 @@ class ApiService {
             'success': false,
             'statusCode': 401,
             'data': null,
-            'message':
-            'انتهت جلسة المستخدم. يرجى تسجيل الدخول مجدداً.',
+            'message': 'انتهت جلسة المستخدم. يرجى تسجيل الدخول مجدداً.',
           };
         }
       }
@@ -311,9 +306,7 @@ class ApiService {
       // ✅ تحليل الاستجابة وإرجاعها
       // ========================================================
       return _parseResponse(response);
-
     } catch (e) {
-
       // ❌ معالجة أخطاء الشبكة
       return _handleNetworkError(e);
     }
@@ -327,7 +320,7 @@ class ApiService {
     required String endpoint,
     required Map<String, dynamic> data,
     bool requireAuth = true,
-    int retryCount = 0,  // ✅ تم إزالة الشرطة السفلية
+    int retryCount = 0,
   }) async {
     try {
       final uri = Uri.parse('$baseUrl/$endpoint');
@@ -349,7 +342,7 @@ class ApiService {
             endpoint: endpoint,
             data: data,
             requireAuth: requireAuth,
-            retryCount: 1,  // ✅ تم إزالة الشرطة السفلية
+            retryCount: 1,
           );
         } else {
           await clearTokens();
@@ -471,7 +464,7 @@ class ApiService {
         final file = await http.MultipartFile.fromPath(
           fileFieldName,
           filePath,
-          contentType: MediaType('image', 'jpeg'), // 🔥 هذا هو التعديل المهم
+          contentType: MediaType('image', 'jpeg'),
         );
 
         request.files.add(file);
@@ -513,5 +506,4 @@ class ApiService {
     await clearTokens();
     print('✅ [API] تم تسجيل الخروج بنجاح');
   }
-
 }

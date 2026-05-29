@@ -184,11 +184,15 @@ class _HomePageState extends State<HomePage> {
   // ============================================================
   // هذه الدالة بتنادى لما الطالب يسجل في كورس جديد من صفحة التسجيل
   // وظيفتها: تحديث قائمة الكورسات في الصفحة الرئيسية فوراً
+  bool _isRegistering = false;
+
   void _addRegisteredCourse(CourseItem course) {
+    if (_isRegistering) return;
+
+    _isRegistering = true;
+
     final authState = context.read<AuthBloc>().state;
     if (authState is AuthAuthenticated) {
-      // 🚀 نرسل حدث تسجيل الكورس للـ BLoC
-      // الـ BLoC رح يتصل بالباك إند وينشئ طلب التسجيل
       context.read<CourseBloc>().add(
         RegisterCourseEvent(
           course: course,
@@ -197,6 +201,10 @@ class _HomePageState extends State<HomePage> {
         ),
       );
     }
+
+    Future.delayed(const Duration(seconds: 2), () {
+      _isRegistering = false;
+    });
   }
 
   // ============================================================

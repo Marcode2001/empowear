@@ -45,7 +45,7 @@ class CourseRepository {
       print('📚 [REPO] جلب الكورسات المتاحة للمستخدم: $userId');
 
       final response = await ApiService.get(
-        endpoint: 'course/trainee-all-courses',
+        endpoint: 'course/trainee-all-courses/',
         requireAuth: true,
       );
 

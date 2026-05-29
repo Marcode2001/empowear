@@ -406,23 +406,22 @@ class _SubmittedProjectsSectionState extends State<_SubmittedProjectsSection> {
 
     switch (project.status) {
       case 'graded':
-        statusColor = Colors.green;
-        statusIcon = Icons.check_circle;
+        statusColor = Colors.green; // ✅ أخضر
         statusText = 'Graded';
         break;
+
       case 'pending':
-        statusColor = Colors.amber;
-        statusIcon = Icons.hourglass_empty;
+        statusColor = Colors.orange; // ✅ برتقالي
         statusText = 'Pending';
         break;
+
       case 'rejected':
-        statusColor = Colors.red;
-        statusIcon = Icons.cancel;
+        statusColor = Colors.red; // ✅ أحمر
         statusText = 'Rejected';
         break;
+
       default:
         statusColor = Colors.grey;
-        statusIcon = Icons.help;
         statusText = 'Unknown';
     }
 
@@ -728,8 +727,13 @@ class AllProjectsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('All Projects',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        iconTheme: const IconThemeData(
+          color: Colors.white, // ✅ سهم الرجوع أبيض
+        ),
+        title: const Text(
+          'All Projects',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.deepPurple,
         centerTitle: true,
         elevation: 0,
@@ -747,13 +751,35 @@ class AllProjectsPage extends StatelessWidget {
     );
   }
 
+  List<Color> _getGradeGradientLetter(String grade) {
+    switch (grade) {
+      case 'A+':
+      case 'A':
+        return [Colors.green, Colors.lightGreen];
+
+      case 'B+':
+      case 'B':
+        return [Colors.green, Colors.lightGreen];
+
+      case 'C+':
+      case 'C':
+        return [Colors.green, Colors.lightGreen];
+
+      case 'F':
+        return [Colors.red, Colors.redAccent];
+
+      default:
+        return [Colors.grey, Colors.blueGrey];
+    }
+  }
+
   Widget _buildProjectCard(StudentProject project) {
     Color statusColor;
     String statusText;
 
     switch (project.status) {
       case 'graded':
-        statusColor = Colors.green;
+        statusColor = Colors.blueAccent;
         statusText = 'Graded';
         break;
       case 'pending':
@@ -794,22 +820,23 @@ class AllProjectsPage extends StatelessWidget {
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
-              if (project.grade != null)
+              if (project.gradeLetter != null)
                 Container(
-                  width: 40,
-                  height: 40,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: _getGradeGradient(project.grade!),
+                      colors: _getGradeGradientLetter(project.gradeLetter!),
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    shape: BoxShape.circle,
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Center(
-                    child: Text(
-                      project.grade!.toInt().toString(),
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                  child: Text(
+                    project.gradeLetter!,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
                 ),
