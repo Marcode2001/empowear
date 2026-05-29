@@ -38,35 +38,35 @@ class CertificateBloc
     // 🏆 Generate Certificate
     // =======================================================
     on<GenerateCertificateEvent>((event, emit) async {
-
       emit(CertificateLoading());
 
       try {
+        final response =
+        await repository.getCertificateByLevel(event.levelNumber);
 
-        final response = await repository.getCertificateByLevel(event.levelNumber);
+        final data = response['data'];
 
-        if (response['success']) {
+        if (response['success'] == true && data != null) {
 
-          emit(CertificateSuccess(
-            response['message'] ?? 'Generated Successfully',
-          ));
+          final certificate = data['certificate'];
 
-          final certificates =
-          await repository.getMyCertificates();
+          if (certificate != null) {
+            emit(CertificateSuccess(
+              response['message'] ?? 'Generated Successfully',
+            ));
 
-          emit(CertificateLoaded(certificates));
+            final certificates =
+            await repository.getAllCertificates();
 
-        } else {
-
-          emit(CertificateError(
-            response['message'] ??
-                response['error'] ??
-                'Generation Failed',
-          ));
+            emit(CertificateLoaded(certificates));
+            return;
+          }
         }
 
+        emit(CertificateError(
+          data?['error'] ?? response['message'] ?? 'Generation Failed',
+        ));
       } catch (e) {
-
         emit(CertificateError(e.toString()));
       }
     });
@@ -95,24 +95,37 @@ class CertificateBloc
       emit(CertificateLoading());
 
       try {
-        final response = await ApiService.post(
-          endpoint: 'certificate/trainee-get-or-generate-by-course-level/${event.levelNumber}/',
-          data: {},
-          requireAuth: true,
-        );
+        final response =
+        await repository.getCertificateByLevel(event.levelNumber);
 
-        print("STATUS: ${response['statusCode']}");
-        print("DATA: ${response['data']}");
+        final data = response['data'];
 
-        if (response['success']) {
-          emit(CertificateGenerated(response['data']));
-        } else {
-          emit(CertificateError(
-            response['message'] ?? 'Not eligible',
-          ));
+        // =========================
+        // ❌ فشل من الباك
+        // =========================
+        if (response['success'] != true) {
+          final errorMessage =
+              data?['error'] ??
+                  response['message'] ??
+                  'You are not eligible';
+
+          emit(CertificateError(errorMessage));
+          return;
         }
+
+        // =========================
+        // ✅ نجاح الطلب
+        // =========================
+        final certificate = data?['certificate'];
+
+        if (certificate == null) {
+          emit(CertificateError('Certificate not found in response'));
+          return;
+        }
+
+        emit(CertificateGenerated(certificate));
       } catch (e) {
-        emit(CertificateError(e.toString()));
+        emit(CertificateError('Unexpected error: ${e.toString()}'));
       }
     });
 

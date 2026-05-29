@@ -3,44 +3,20 @@ import '../services/api_service.dart';
 
 class CertificateRepository {
 
-  // =========================================================
-  // 🎓 Get My Certificates
-  // =========================================================
   Future<List<CertificateModel>> getMyCertificates() async {
-
     final response = await ApiService.get(
       endpoint: 'certificate/trainee-my-certificates/',
       requireAuth: true,
     );
 
     if (response['success']) {
-
       final List data = response['data'];
-
-      return data
-          .map((e) => CertificateModel.fromJson(e))
-          .toList();
+      return data.map((e) => CertificateModel.fromJson(e)).toList();
     }
 
     return [];
   }
 
-  // =========================================================
-  // 🏆 Generate Certificate
-  // =========================================================
-  Future<Map<String, dynamic>> generateCertificate(
-      int levelNumber,
-      ) async {
-
-    final response = await ApiService.post(
-      endpoint:
-      'certificate/trainee-get-or-generate-by-course-level/$levelNumber/',
-      data: {},
-      requireAuth: true,
-    );
-
-    return response;
-  }
 
   // =========================================================
   // 👨‍💼 Admin Get All
@@ -65,10 +41,14 @@ class CertificateRepository {
   }
 
 
-  Future<Map<String, dynamic>> getCertificateByLevel(int level) {
-    return ApiService.get(
+  Future<Map<String, dynamic>> getCertificateByLevel(int level) async {
+    final response = await ApiService.post(
       endpoint: 'certificate/trainee-get-or-generate-by-course-level/$level/',
+      data: {},
+      requireAuth: true,
     );
+
+    return response;
   }
 
   // =========================================================

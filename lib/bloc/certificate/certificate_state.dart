@@ -1,5 +1,4 @@
 import '../../models/certificate_model.dart';
-import '../../bloc/certificate/certificate_event.dart';
 abstract class CertificateState {}
 
 // =====================
@@ -19,9 +18,9 @@ class CertificateError extends CertificateState {
 // نجاح عام
 // =====================
 class CertificateSuccess extends CertificateState {
-  final String message;
+  final String certificateUrl;
 
-  CertificateSuccess(this.message);
+  CertificateSuccess(this.certificateUrl);
 }
 
 // =====================
@@ -37,31 +36,7 @@ class CertificateLoaded extends CertificateState {
 // 🔥 الحالة الناقصة عندك
 // =====================
 class CertificateGenerated extends CertificateState {
-  final dynamic certificate;
-
+  final Map<String, dynamic> certificate;
   CertificateGenerated(this.certificate);
 }
 
-/*abstract class CertificateState {}
-
-class CertificateInitial extends CertificateState {}
-
-class CertificateLoading extends CertificateState {}
-
-class CertificateLoaded extends CertificateState {
-  final List<CertificateModel> certificates;
-
-  CertificateLoaded(this.certificates);
-}
-
-class CertificateError extends CertificateState {
-  final String message;
-
-  CertificateError(this.message);
-}
-
-class CertificateSuccess extends CertificateState {
-  final String message;
-
-  CertificateSuccess(this.message);
-}*/

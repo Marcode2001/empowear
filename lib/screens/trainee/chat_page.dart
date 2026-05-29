@@ -62,6 +62,10 @@ class _ChatsListPageState extends State<ChatsListPage> {
               itemCount: state.conversations.length,
               itemBuilder: (context, index) {
                 final conv = state.conversations[index];
+                print("🆔 conversation id = ${conv.id}");
+                print("📦 RAW CONVERSATION:");
+                print("👩‍🏫 trainerFullName = ${conv.trainerFullName}");
+                print("👨‍🎓 traineeFullName = ${conv.traineeFullName}");
                 final name = conv.getPartnerName(UserType.trainee);
                 final partnerId = conv.getPartnerId(UserType.trainee);
 

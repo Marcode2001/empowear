@@ -1,4 +1,4 @@
-//admin_home_screen.dart
+// admin_home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'admin_certificates_page.dart';
@@ -199,8 +199,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               const SizedBox(height: 24),
               const Text('Management', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
-              // ✅ مربعات الإدارة بنفس تصميم واجهة الطالب (2x2)
-              _buildManagementGrid(),
+              // ✅ مربعات الإدارة تحت بعض (عمودية)
+              _buildManagementList(),
               const SizedBox(height: 30),
             ],
           ),
@@ -278,95 +278,85 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
-  // ✅ دالة بناء شبكة الإدارة (2x2) مثل واجهة الطالب
-  Widget _buildManagementGrid() {
+  // ✅ دالة بناء قائمة الإدارة (عمودية) - تحت بعض
+  Widget _buildManagementList() {
     return Column(
       children: [
-        // الصف الأول: Job Opportunities + Students Project
-        Row(
-          children: [
-            Expanded(
-              child: _buildManagementCard(
-                title: 'Job\nOpportunities',
-                icon: Icons.work,
-                color: Colors.teal,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AdminJobsScreen(),
-                  ),
-                ),
-              ),
+        // Job Opportunities
+        _buildManagementCard(
+          title: 'Job Opportunities',
+          icon: Icons.work,
+          color: Colors.teal,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const AdminJobsScreen(),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildManagementCard(
-                title: 'Students\nProject',
-                icon: Icons.folder_special,
-                color: Colors.orange,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AdminProjectsScreen(),
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
         const SizedBox(height: 12),
-        // الصف الثاني: Courses + Job Applications
-        Row(
-          children: [
-            Expanded(
-              child: _buildManagementCard(
-                title: 'Courses',
-                icon: Icons.library_books,
-                color: Colors.deepPurple,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AdminCoursesScreen(),
-                  ),
-                ),
-              ),
+
+        // Students Project
+        _buildManagementCard(
+          title: 'Students Project',
+          icon: Icons.folder_special,
+          color: Colors.orange,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const AdminProjectsScreen(),
             ),
-            Expanded(
-              child: _buildManagementCard(
-                title: 'Certificates',
-                icon: Icons.card_membership,
-                color: Colors.purple,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const AdminCertificatesPage(),
-                    ),
-                  );
-                },
-              ),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Courses
+        _buildManagementCard(
+          title: 'Courses',
+          icon: Icons.library_books,
+          color: Colors.deepPurple,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const AdminCoursesScreen(),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildManagementCard(
-                title: 'Job\nApplications',
-                icon: Icons.assignment_turned_in,
-                color: Colors.green,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AdminApplicationsScreen(),
-                  ),
-                ),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Certificates
+        _buildManagementCard(
+          title: 'Certificates',
+          icon: Icons.card_membership,
+          color: Colors.purple,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const AdminCertificatesPage(),
               ),
+            );
+          },
+        ),
+        const SizedBox(height: 12),
+
+        // Job Applications
+        _buildManagementCard(
+          title: 'Job Applications',
+          icon: Icons.assignment_turned_in,
+          color: Colors.green,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const AdminApplicationsScreen(),
             ),
-          ],
+          ),
         ),
       ],
     );
   }
 
-  // ✅ بطاقة الإدارة بنفس تصميم واجهة الطالب
+  // ✅ بطاقة الإدارة (عرض كامل)
   Widget _buildManagementCard({
     required String title,
     required IconData icon,
@@ -376,22 +366,23 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 100,
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: color.withOpacity(0.3), width: 1),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Row(
           children: [
             Icon(icon, color: color, size: 32),
-            const SizedBox(height: 6),
+            const SizedBox(width: 16),
             Text(
               title,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold),
+              style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.bold),
             ),
+            const Spacer(),
+            Icon(Icons.arrow_forward_ios, color: color, size: 18),
           ],
         ),
       ),

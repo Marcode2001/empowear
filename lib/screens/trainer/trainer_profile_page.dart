@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/auth/auth_bloc.dart';
-// ✅ التعديل: استيراد ChatBloc لاستخدام ResetChatEvent
 import '../../bloc/chat/chat_bloc.dart';
 import '../auth/login_screen.dart';
 
@@ -17,41 +16,49 @@ class TrainerProfilePage extends StatefulWidget {
 class _TrainerProfilePageState extends State<TrainerProfilePage> {
   bool _isLoading = false;
 
-  // ✅ بيانات المدرب (ستأتي من API لاحقاً)
+  bool _isLoggingOut = false; // ✅ منع التكرار
+
   final String _specialization = 'Senior Fashion Designer';
 
   Future<void> _logout() async {
+    if (_isLoggingOut) return; // 🚨 يمنع التكرار
+    _isLoggingOut = true;
+
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Logout'),
         content: const Text('Are you sure you want to logout?'),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.grey),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Logout', style: TextStyle(color: Colors.red)),
+            child: const Text(
+              'Logout',
+              style: TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
     );
 
     if (shouldLogout == true) {
-      setState(() {
-        _isLoading = true;
-      });
-
       try {
-        // ✅ ✅ ✅ التعديل الأهم: إعادة تعيين ChatBloc قبل تسجيل الخروج
-        // هذا يمنع بقاء بيانات المحادثات القديمة في الذاكرة
         print("🔄 [TrainerProfilePage] Resetting ChatBloc before logout...");
+
+        // ✅ 1. Reset chat
         context.read<ChatBloc>().add(const ResetChatEvent());
 
-        // ✅ استخدام AuthBloc بدلاً من AuthProvider
+        // ✅ 2. Logout auth
         context.read<AuthBloc>().add(const LogoutEvent());
 
         if (mounted) {
@@ -71,22 +78,16 @@ class _TrainerProfilePageState extends State<TrainerProfilePage> {
             ),
           );
         }
-      } finally {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
       }
     }
+
+    _isLoggingOut = false;
   }
 
   @override
   Widget build(BuildContext context) {
-    // ✅ استخدام BlocBuilder للاستماع إلى AuthBloc
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
-        // ✅ الحصول على بيانات المستخدم من الحالة
         String userName = 'Trainer';
         String userEmail = 'trainer@example.com';
 
@@ -97,12 +98,9 @@ class _TrainerProfilePageState extends State<TrainerProfilePage> {
 
         return Scaffold(
           resizeToAvoidBottomInset: true,
-          body: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
+          body: SingleChildScrollView(
             child: Column(
               children: [
-                // ==================== الخلفية العلوية والصورة ====================
                 Container(
                   width: double.infinity,
                   decoration: const BoxDecoration(
@@ -119,27 +117,16 @@ class _TrainerProfilePageState extends State<TrainerProfilePage> {
                   child: Column(
                     children: [
                       const SizedBox(height: 40),
-                      // الدائرة (الصورة الرمزية)
+
                       Container(
                         width: 120,
                         height: 120,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white,
-                            width: 4,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 10,
-                              spreadRadius: 2,
-                            ),
-                          ],
+                          border: Border.all(color: Colors.white, width: 4),
                           color: Colors.deepPurple.shade400,
                         ),
                         child: CircleAvatar(
-                          radius: 58,
                           backgroundColor: Colors.transparent,
                           child: Text(
                             userName.isNotEmpty
@@ -153,8 +140,9 @@ class _TrainerProfilePageState extends State<TrainerProfilePage> {
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 20),
-                      // اسم المستخدم
+
                       Text(
                         userName,
                         style: const TextStyle(
@@ -163,10 +151,14 @@ class _TrainerProfilePageState extends State<TrainerProfilePage> {
                           color: Colors.white,
                         ),
                       ),
+
                       const SizedBox(height: 8),
-                      // ✅ اختصاص المدرب (بدلاً من كلمة Trainer)
+
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(20),
@@ -176,75 +168,54 @@ class _TrainerProfilePageState extends State<TrainerProfilePage> {
                           style: const TextStyle(
                             fontSize: 14,
                             color: Colors.white,
-                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 40),
                     ],
                   ),
                 ),
 
-                // ==================== بطاقات المعلومات ====================
                 Padding(
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     children: [
-                      // ✅ بطاقة البريد الإلكتروني فقط
                       _buildInfoCard(
                         icon: Icons.email_outlined,
                         title: 'Email',
                         value: userEmail,
                         iconColor: Colors.blue,
                       ),
-                      const SizedBox(height: 16),
                     ],
                   ),
                 ),
 
                 const SizedBox(height: 140),
 
-                // ==================== زر تسجيل الخروج ====================
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Container(
+                  child: SizedBox(
                     width: double.infinity,
                     height: 55,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.red.shade700, Colors.red.shade500],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.red.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
                     child: ElevatedButton(
                       onPressed: _logout,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
+                        backgroundColor: Colors.red,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.logout, color: Colors.white, size: 22),
+                          Icon(Icons.logout, color: Colors.white),
                           SizedBox(width: 12),
                           Text(
                             'Sign Out',
                             style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
                               color: Colors.white,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
@@ -278,45 +249,21 @@ class _TrainerProfilePageState extends State<TrainerProfilePage> {
           BoxShadow(
             color: Colors.grey.withOpacity(0.1),
             blurRadius: 8,
-            spreadRadius: 2,
-            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Row(
         children: [
-          Container(
-            width: 45,
-            height: 45,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [iconColor.withOpacity(0.2), iconColor.withOpacity(0.1)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: iconColor, size: 24),
-          ),
+          Icon(icon, color: iconColor),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 4),
+                Text(title, style: TextStyle(color: Colors.grey[600])),
                 Text(
                   value,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: const TextStyle(fontWeight: FontWeight.w500),
                 ),
               ],
             ),

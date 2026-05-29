@@ -98,6 +98,8 @@ class ApiService {
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'refresh': refreshToken}),
       ).timeout(const Duration(seconds: timeoutSeconds));
+      print("STATUS: ${response.statusCode}");
+      print("BODY: ${response.body}");
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);

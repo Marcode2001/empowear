@@ -5,6 +5,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'my_certificates_page.dart';
+import 'certificate_viewer_page.dart';
 import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/course/course_bloc.dart';
 import '../../bloc/course/course_event.dart';
@@ -12,6 +14,7 @@ import '../../bloc/course/course_state.dart';
 
 import '../../bloc/certificate/certificate_bloc.dart';
 import '../../bloc/certificate/certificate_event.dart';
+import '../../bloc/certificate/certificate_state.dart';
 
 import '../../models/course_models.dart';
 import '../../repositories/course_repository.dart';
@@ -106,94 +109,119 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        title: const Text('My Courses', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.deepPurple,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(colors: [Colors.deepPurple, Colors.purple]),
+    return BlocListener<CertificateBloc, CertificateState>(
+      listener: (context, state) {
+        if (state is CertificateError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+
+        if (state is CertificateSuccess) {
+
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CertificateViewerPage(
+                pdfUrl: state.certificateUrl,
+              ),
+            ),
+          );
+        }
+      },
+      child: Scaffold(
+        resizeToAvoidBottomInset: true,
+        appBar: AppBar(
+          title: const Text('My Courses', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.deepPurple,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(colors: [Colors.deepPurple, Colors.purple]),
+            ),
           ),
         ),
-      ),
-      body: courses.isEmpty
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        body: courses.isEmpty
+            ? Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.school_outlined, size: 80, color: Colors.grey[400]),
+              const SizedBox(height: 16),
+              Text(
+                'No courses registered yet',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Go to Register Course to start learning',
+                style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+              ),
+            ],
+          ),
+        )
+            : Column(
           children: [
-            Icon(Icons.school_outlined, size: 80, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              'No courses registered yet',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Go to Register Course to start learning',
-              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-            ),
-          ],
-        ),
-      )
-          : Column(
-        children: [
-          // حقل البحث
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Container(
-              decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (value) => setState(() => _searchQuery = value),
-                decoration: InputDecoration(
-                  hintText: 'Search by course name or trainer...',
-                  prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                    icon: const Icon(Icons.clear, color: Colors.grey),
-                    onPressed: () => setState(() {
-                      _searchQuery = '';
-                      _searchController.clear();
-                    }),
-                  )
-                      : null,
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+            // حقل البحث
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Container(
+                decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (value) => setState(() => _searchQuery = value),
+                  decoration: InputDecoration(
+                    hintText: 'Search by course name or trainer...',
+                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                      icon: const Icon(Icons.clear, color: Colors.grey),
+                      onPressed: () => setState(() {
+                        _searchQuery = '';
+                        _searchController.clear();
+                      }),
+                    )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
                 ),
               ),
             ),
-          ),
-          if (_searchQuery.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text('$_totalResultsCount results found', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-            ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: _filteredCourses.isEmpty
-                ? Center(
-              child: Column(
-                children: [
-                  const SizedBox(height: 50),
-                  Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
-                  Text('No courses found', style: TextStyle(color: Colors.grey[600], fontSize: 16)),
-                ],
+            if (_searchQuery.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text('$_totalResultsCount results found', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
               ),
-            )
-                : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _filteredCourses.length,
-              itemBuilder: (context, index) => _buildCourseCard(_filteredCourses[index]),
+            const SizedBox(height: 8),
+            Expanded(
+              child: _filteredCourses.isEmpty
+                  ? Center(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 50),
+                    Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
+                    const SizedBox(height: 16),
+                    Text('No courses found', style: TextStyle(color: Colors.grey[600], fontSize: 16)),
+                  ],
+                ),
+              )
+                  : ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _filteredCourses.length,
+                itemBuilder: (context, index) => _buildCourseCard(_filteredCourses[index]),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -292,8 +292,8 @@ class ChatRepository {
     return convs.map((conv) {
       final key = 'chat_messages_${conv.id}';
       final saved = prefs.getString(key);
-      String lastMsg = conv.lastMessage;
 
+      String lastMsg = conv.lastMessage;
 
       if (saved != null && saved.isNotEmpty) {
         try {

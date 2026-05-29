@@ -26,6 +26,7 @@ dependencies:
   model_viewer_plus: ^1.7.0
   logger: ^2.7.0
 
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -236,14 +236,14 @@ class _HomePageState extends State<HomePage> {
         // ✅ استخراج قائمة الكورسات من الـ State مباشرة
         // إذا كانت الحالة RegisteredCoursesLoaded، نأخذ القائمة، وإلا نأخذ قائمة فاضية
         /// ✅ منع اختفاء الكورسات عند أي rebuild أو loading
-        List<CourseItem> registeredCourses = _cachedCourses;
+        List<CourseItem> registeredCourses = [];
 
         /// ✅ إذا وصلت بيانات جديدة نخزنها
         if (courseState is RegisteredCoursesLoaded) {
-
-          _cachedCourses = courseState.registeredCourses;
-
           registeredCourses = courseState.registeredCourses;
+          _cachedCourses = registeredCourses;
+        } else {
+          registeredCourses = _cachedCourses;
         }  // قائمة فاضية إذا الحالة مو ناجحة بعد
 
         return SingleChildScrollView(  // 📜 للسماح بالتمرير إذا المحتوى أطول من الشاشة

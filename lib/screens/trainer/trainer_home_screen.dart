@@ -96,9 +96,18 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
   String? _errorMessage;
 
   @override
+  @override
   void initState() {
     super.initState();
-    _loadTrainerData();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authState = context.read<AuthBloc>().state;
+
+      if (authState is AuthAuthenticated &&
+          authState.user.userType.name == "trainer") {
+        _loadTrainerData();
+      }
+    });
   }
 
   // ✅ جلب بيانات المدرب (بدون استخدام CourseBloc)
@@ -113,6 +122,7 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
     try {
       final authState = context.read<AuthBloc>().state;
       if (authState is! AuthAuthenticated) {
+
         setState(() {
           _isLoading = false;
           _errorMessage = 'User not authenticated';
@@ -189,7 +199,14 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
   Widget build(BuildContext context) {
     final authState = context.watch<AuthBloc>().state;
 
+    // ✅ إذا المستخدم عمل logout
+    // نوقف بناء الصفحة مؤقتاً
+    if (authState is AuthUnauthenticated) {
+      return const SizedBox.shrink();
+    }
+
     String userName = 'Trainer';
+
     if (authState is AuthAuthenticated) {
       userName = authState.user.name;
     }
@@ -207,7 +224,9 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [Colors.deepPurple, Colors.purple]),
+                gradient: const LinearGradient(
+                  colors: [Colors.deepPurple, Colors.purple],
+                ),
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
@@ -225,12 +244,20 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
                     children: [
                       const Text(
                         'Welcome 👋',
-                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         userName,
-                        style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
@@ -241,19 +268,31 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
                       shape: BoxShape.circle,
                     ),
                     child: Text(
-                      userName.isNotEmpty ? userName[0].toUpperCase() : 'T',
-                      style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+                      userName.isNotEmpty
+                          ? userName[0].toUpperCase()
+                          : 'T',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
+
             const SizedBox(height: 24),
 
             // بطاقات الإحصائيات
             Row(
               children: [
-                _buildStatCard(Icons.menu_book, 'Courses', '${_courses.length}', Colors.deepPurple),
+                _buildStatCard(
+                  Icons.menu_book,
+                  'Courses',
+                  '${_courses.length}',
+                  Colors.deepPurple,
+                ),
                 const SizedBox(width: 12),
                 _buildStatCard(
                   Icons.pending_actions,
@@ -263,6 +302,7 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
                 ),
               ],
             ),
+
             const SizedBox(height: 24),
 
             // زر استلام المشاريع
@@ -274,27 +314,32 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
               Colors.green,
               const ReceiveStudentProjectsPage(),
             ),
+
             const SizedBox(height: 24),
 
             // ============================================================
-            // 📚 قسم "My Courses" مع زر "See All" (مثل صفحة الطالب)
+            // 📚 قسم "My Courses" مع زر "See All"
             // ============================================================
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
                   'My Courses',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                // زر "See All" يظهر فقط إذا في كورسات
+
+                // زر "See All"
                 if (_courses.isNotEmpty && !_isLoading)
                   GestureDetector(
                     onTap: () {
-                      // ✅ الانتقال لصفحة الكورسات الرئيسية للمدرب
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const TrainerCoursesMainPage(),
+                          builder: (context) =>
+                          const TrainerCoursesMainPage(),
                         ),
                       );
                     },
@@ -309,9 +354,10 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
                   ),
               ],
             ),
+
             const SizedBox(height: 12),
 
-            // قائمة الكورسات (مثل تصميم الطالب)
+            // قائمة الكورسات
             if (_isLoading)
               const Center(
                 child: Padding(
@@ -323,7 +369,11 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
               Center(
                 child: Column(
                   children: [
-                    Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
+                    Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.red[300],
+                    ),
                     const SizedBox(height: 12),
                     Text(
                       _errorMessage!,
@@ -351,28 +401,42 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
                   ),
                   child: const Column(
                     children: [
-                      Icon(Icons.school_outlined, size: 60, color: Colors.grey),
+                      Icon(
+                        Icons.school_outlined,
+                        size: 60,
+                        color: Colors.grey,
+                      ),
                       SizedBox(height: 12),
                       Text(
                         'No courses yet',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.grey),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey,
+                        ),
                       ),
                       SizedBox(height: 8),
                       Text(
                         'Your courses will appear here',
-                        style: TextStyle(fontSize: 13, color: Colors.grey),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey,
+                        ),
                       ),
                     ],
                   ),
                 )
               else
-              // ✅ عرض أول 3 كورسات فقط في الصفحة الرئيسية (مثل الطالب)
-                ..._courses.take(3).map((course) => _buildCourseCard(course)),
+                ..._courses
+                    .take(3)
+                    .map((course) => _buildCourseCard(course)),
           ],
         ),
       ),
     );
   }
+
+
 
   Widget _buildStatCard(IconData icon, String label, String value, Color color) {
     return Expanded(

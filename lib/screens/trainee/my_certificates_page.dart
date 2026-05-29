@@ -94,12 +94,12 @@ content: Text(state.message),
 
 if (state is CertificateSuccess) {
 
-ScaffoldMessenger.of(context).showSnackBar(
-SnackBar(
-backgroundColor: Colors.green,
-content: Text(state.message),
-),
-);
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      backgroundColor: Colors.green,
+      content: Text('Certificate loaded successfully'),
+    ),
+  );
 }
 },
 

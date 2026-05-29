@@ -149,7 +149,7 @@ class ChatConversation {
       traineeProfile: json['trainee_profile'] ?? 0,
       traineeFullName: json['trainee_full_name']?.toString(),
       isActive: json['is_active'] ?? true,
-      lastMessage: json['last_message']?.toString() ?? 'No messages yet',
+      lastMessage: json['last_message_content'] ?? '',
       updatedAt: json['updated_at'] != null
           ? DateTime.tryParse(json['updated_at']) ?? DateTime.now()
           : DateTime.now(),
