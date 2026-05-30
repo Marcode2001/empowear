@@ -23,6 +23,8 @@ class CertificateSuccess extends CertificateState {
   CertificateSuccess(this.certificateUrl);
 }
 
+
+
 // =====================
 // تحميل الشهادات
 // =====================

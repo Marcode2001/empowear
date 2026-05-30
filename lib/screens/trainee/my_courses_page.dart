@@ -2,11 +2,10 @@
 // ============================================================
 // 📚 صفحة عرض الكورسات المسجلة للطالب (My Courses Page)
 // ============================================================
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'my_certificates_page.dart';
-import 'certificate_viewer_page.dart';
+import 'certificate_page.dart';
 import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/course/course_bloc.dart';
 import '../../bloc/course/course_event.dart';
@@ -75,6 +74,8 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
     }).toList();
   }
 
+
+
   // عدد النتائج
   int get _totalResultsCount => _filteredCourses.length;
 
@@ -121,14 +122,19 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
         }
 
         if (state is CertificateSuccess) {
+          final url = state.certificateUrl;
 
+          if (url.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Invalid certificate URL")),
+            );
+            return;
+          }
 
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => CertificateViewerPage(
-                pdfUrl: state.certificateUrl,
-              ),
+              builder: (_) => CertificateViewerPage(pdfUrl: url),
             ),
           );
         }
@@ -273,42 +279,11 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [Colors.deepPurple, Colors.purple]),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.access_time, size: 12, color: Colors.white),
-                      const SizedBox(width: 4),
-                      Text(course.totalHours != '0h' ? course.totalHours : 'N/A',
-                          style: const TextStyle(fontSize: 11, color: Colors.white)),
-                    ],
-                  ),
-                ),
+
               ],
             ),
             const SizedBox(height: 16),
-            // شريط التقدم
-            Row(
-              children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: LinearProgressIndicator(
-                      value: course.progress / 100,
-                      backgroundColor: Colors.grey.shade200,
-                      color: Colors.deepPurple,
-                      minHeight: 8,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text('${course.progress}%', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.deepPurple)),
-              ],
-            ),
+
             const SizedBox(height: 12),
 
             SizedBox(
@@ -330,7 +305,9 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
                     }
 
                     context.read<CertificateBloc>().add(
-                      GetCertificateByLevelEvent(levelNumber),
+                      GenerateCertificateEvent(
+                        levelNumber: course.levelNumber,
+                      ),
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -348,12 +325,7 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
               ),
             ),
             const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text('${course.totalLessons} lessons', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-              ],
-            ),
+
           ],
         ),
       ),

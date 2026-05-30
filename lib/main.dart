@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'bloc/auth/auth_bloc.dart';
 import 'bloc/course/course_bloc.dart';
 import 'bloc/project/project_bloc.dart';
@@ -9,19 +8,16 @@ import 'bloc/chat/chat_bloc.dart';
 import 'bloc/job/job_bloc.dart';
 import 'bloc/previous_student_work/previous_student_work_bloc.dart';
 import 'bloc/certificate/certificate_bloc.dart';
-
 import 'repositories/certificate_repository.dart';
 import 'repositories/course_repository.dart';
 import 'repositories/project_repository.dart';
 import 'repositories/chat_repository.dart';
 import 'repositories/job_repository.dart';
 import 'repositories/previous_student_work_repository.dart';
-
 import 'screens/auth/login_screen.dart';
 import 'screens/trainee/trainee_home_screen.dart';
 import 'screens/trainer/trainer_home_screen.dart';
 import 'screens/admin/admin_home_screen.dart';
-
 import 'models/user_model.dart';
 
 void main() async {
@@ -38,37 +34,22 @@ class MyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) =>
-          AuthBloc()..add(const CheckAuthStatusEvent()),
+          create: (_) => AuthBloc()..add(const CheckAuthStatusEvent()),
         ),
         BlocProvider(
-          create: (_) =>
-              CourseBloc(courseRepository: CourseRepository()),
+          create: (_) => CourseBloc(courseRepository: CourseRepository()),
         ),
         BlocProvider(
-          create: (_) =>
-              ProjectBloc(projectRepository: ProjectRepository()),
+          create: (_) => ProjectBloc(projectRepository: ProjectRepository()),
         ),
         BlocProvider(
-          create: (_) =>
-              PreviousWorkBloc(PreviousStudentWorkRepository()),
+          create: (_) => PreviousWorkBloc(PreviousStudentWorkRepository()),
         ),
-        BlocProvider(
-          create: (_) =>
-              ChatBloc(repo: ChatRepository()),
-        ),
-        BlocProvider(
-          create: (_) =>
-              JobBloc(jobRepository: JobRepository()),
-        ),
-        BlocProvider(
-          create: (_) =>
-              CertificateBloc(CertificateRepository()),
-        ),
+        BlocProvider(create: (_) => ChatBloc(repo: ChatRepository())),
+        BlocProvider(create: (_) => JobBloc(jobRepository: JobRepository())),
+        BlocProvider(create: (_) => CertificateBloc(CertificateRepository())),
       ],
-
       child: MaterialApp(
-        key: ValueKey(DateTime.now().toString()),
         debugShowCheckedModeBanner: false,
         title: 'Empower',
         theme: ThemeData(
@@ -76,58 +57,44 @@ class MyApp extends StatelessWidget {
           scaffoldBackgroundColor: Colors.white,
           fontFamily: 'Poppins',
         ),
-
         home: const AppRouter(),
       ),
     );
   }
 }
 
-// ============================================================
-// 🎯 AppRouter (FINAL CLEAN ROUTER)
-// ============================================================
-
 class AppRouter extends StatelessWidget {
   const AppRouter({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) {
-
-        // 🔄 loading
-        if (state is AuthLoading) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        // ✅ Imperatively navigate and clear the entire stack on logout
+        if (state is AuthUnauthenticated) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (route) => false,
           );
         }
-
-        if (state is AuthInitial) {
-          return const LoginScreen();
-        }
-
-        // ❌ logged out
-        if (state is AuthUnauthenticated) {
-          return const LoginScreen();
-        }
-
-        // ✅ logged in
-        if (state is AuthAuthenticated) {
-          final user = state.user;
-
-          if (user.userType == UserType.admin) {
-            return const AdminHomeScreen();
-          }
-
-          if (user.userType == UserType.trainer) {
-            return const TrainerHomeScreen();
-          }
-
-          return const TraineeHomeScreen();
-        }
-
-        return const LoginScreen();
       },
+      child: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, state) {
+          if (state is AuthLoading || state is AuthInitial) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (state is AuthAuthenticated) {
+            final user = state.user;
+            if (user.userType == UserType.admin) return const AdminHomeScreen();
+            if (user.userType == UserType.trainer)
+              return const TrainerHomeScreen();
+            return const TraineeHomeScreen();
+          }
+          return const LoginScreen();
+        },
+      ),
     );
   }
 }

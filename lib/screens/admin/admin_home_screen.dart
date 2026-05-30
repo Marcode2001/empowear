@@ -199,11 +199,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               const SizedBox(height: 24),
               const Text('Management', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
-              // ✅ مربعات الإدارة تحت بعض (عمودية)
               _buildManagementList(),
               const SizedBox(height: 30),
+
+              // ✅ أضف هكذا بالضبط
+              const SizedBox(height: 30),  // لاحظ: height: 30 وليس 30 فقط
             ],
           ),
+
         ),
       ),
     );
@@ -388,4 +391,5 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       ),
     );
   }
+
 }

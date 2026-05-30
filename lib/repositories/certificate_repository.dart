@@ -9,7 +9,7 @@ class CertificateRepository {
       requireAuth: true,
     );
 
-    if (response['success']) {
+    if (response['success'] == true || response['statusCode'] == 200) {
       final List data = response['data'];
       return data.map((e) => CertificateModel.fromJson(e)).toList();
     }
@@ -48,7 +48,11 @@ class CertificateRepository {
       requireAuth: true,
     );
 
-    return response;
+    return {
+      'success': response['success'],
+      'data': response['data'] ?? response['certificate'],
+      'message': response['message'],
+    };
   }
 
   // =========================================================

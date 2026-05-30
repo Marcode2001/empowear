@@ -26,7 +26,7 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isLoading = false;
   bool _isRefreshingProjects = false;
 
-  final Map<String, dynamic> studentStats = {'level': 3};
+
 
   @override
   void initState() {
@@ -199,23 +199,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             style: const TextStyle(
                                 fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
                         const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.star, size: 12, color: Colors.amber),
-                              const SizedBox(width: 4),
-                              Text('Level ${studentStats['level']}',
-                                  style: const TextStyle(
-                                      fontSize: 11, fontWeight: FontWeight.w500, color: Colors.white)),
-                            ],
-                          ),
-                        ),
+
                         const Spacer(),
                       ],
                     ),

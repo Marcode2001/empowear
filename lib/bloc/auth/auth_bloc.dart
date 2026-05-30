@@ -33,9 +33,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
       if (result['success']) {
         final user = result['user'] as User;
-
         await _saveUserData(user, result['token'] as String);
-
         emit(AuthAuthenticated(user: user));
       } else {
         emit(AuthError(message: result['message'] ?? 'فشل تسجيل الدخول'));
@@ -59,9 +57,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
       if (result['success']) {
         final user = result['user'] as User;
-
         await _saveUserData(user, result['token'] as String);
-
         emit(AuthAuthenticated(user: user));
       } else {
         emit(AuthError(message: result['message'] ?? 'فشل التسجيل'));
@@ -76,15 +72,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       LogoutEvent event,
       Emitter<AuthState> emit,
       ) async {
-    emit(const AuthLoading()); // ⭐ مهم جداً
-
+    // ✅ Removed AuthLoading emit to avoid screen flash
     try {
       await _authRepository.logout();
       await _clearUserData();
-
-      // ⭐ أهم نقطة: حالة واحدة فقط
       emit(const AuthUnauthenticated());
-
     } catch (e) {
       emit(AuthError(message: e.toString()));
     }
@@ -94,18 +86,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       CheckAuthStatusEvent event,
       Emitter<AuthState> emit,
       ) async {
-
     emit(const AuthLoading());
 
     try {
       final prefs = await SharedPreferences.getInstance();
-
       final token = prefs.getString('access_token');
       final userJson = prefs.getString('user_data');
 
       if (token != null && userJson != null) {
         final user = User.fromJson(jsonDecode(userJson));
-
         emit(AuthAuthenticated(user: user));
       } else {
         emit(const AuthUnauthenticated());
@@ -143,14 +132,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _saveUserData(User user, String token) async {
     final prefs = await SharedPreferences.getInstance();
-
     await prefs.setString('access_token', token);
     await prefs.setString('user_data', jsonEncode(user.toJson()));
   }
 
   Future<void> _clearUserData() async {
     final prefs = await SharedPreferences.getInstance();
-
     await prefs.remove('access_token');
     await prefs.remove('user_data');
   }

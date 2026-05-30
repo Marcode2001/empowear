@@ -1,42 +1,23 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../repositories/certificate_repository.dart';
-
 import 'certificate_event.dart';
 import 'certificate_state.dart';
-import 'package:empower/services/api_service.dart';
 
-class CertificateBloc
-    extends Bloc<CertificateEvent, CertificateState> {
-
+class CertificateBloc extends Bloc<CertificateEvent, CertificateState> {
   final CertificateRepository repository;
 
-  CertificateBloc(this.repository)
-      : super(CertificateInitial()) {
+  CertificateBloc(this.repository) : super(CertificateInitial()) {
 
-    // =======================================================
-    // 📥 Load My Certificates
-    // =======================================================
     on<LoadMyCertificatesEvent>((event, emit) async {
-
       emit(CertificateLoading());
-
       try {
-
-        final certificates =
-        await repository.getMyCertificates();
-
+        final certificates = await repository.getMyCertificates();
         emit(CertificateLoaded(certificates));
-
       } catch (e) {
-
         emit(CertificateError(e.toString()));
       }
     });
 
-    // =======================================================
-    // 🏆 Generate Certificate
-    // =======================================================
     on<GenerateCertificateEvent>((event, emit) async {
       emit(CertificateLoading());
 
@@ -44,109 +25,43 @@ class CertificateBloc
         final response =
         await repository.getCertificateByLevel(event.levelNumber);
 
-        final data = response['data'];
-
-        if (response['success'] == true && data != null) {
-
-          final certificate = data['certificate'];
-
-          if (certificate != null) {
-            emit(CertificateSuccess(
-              response['message'] ?? 'Generated Successfully',
-            ));
-
-            final certificates =
-            await repository.getAllCertificates();
-
-            emit(CertificateLoaded(certificates));
-            return;
-          }
-        }
-
-        emit(CertificateError(
-          data?['error'] ?? response['message'] ?? 'Generation Failed',
-        ));
-      } catch (e) {
-        emit(CertificateError(e.toString()));
-      }
-    });
-
-    // =======================================================
-    // 👨‍💼 Admin Load
-    // =======================================================
-    on<LoadAllCertificatesEvent>((event, emit) async {
-
-      emit(CertificateLoading());
-
-      try {
-
-        final certificates =
-        await repository.getAllCertificates();
-
-        emit(CertificateLoaded(certificates));
-
-      } catch (e) {
-
-        emit(CertificateError(e.toString()));
-      }
-    });
-
-    on<GetCertificateByLevelEvent>((event, emit) async {
-      emit(CertificateLoading());
-
-      try {
-        final response =
-        await repository.getCertificateByLevel(event.levelNumber);
-
-        final data = response['data'];
-
-        // =========================
-        // ❌ فشل من الباك
-        // =========================
-        if (response['success'] != true) {
-          final errorMessage =
-              data?['error'] ??
-                  response['message'] ??
-                  'You are not eligible';
-
-          emit(CertificateError(errorMessage));
-          return;
-        }
-
-        // =========================
-        // ✅ نجاح الطلب
-        // =========================
-        final certificate = data?['certificate'];
+        final certificate = response['data'];
 
         if (certificate == null) {
-          emit(CertificateError('Certificate not found in response'));
+          emit(CertificateError('Certificate not found'));
           return;
         }
 
-        emit(CertificateGenerated(certificate));
+        final url = certificate['certificate_file'];
+
+        if (url == null) {
+          emit(CertificateError('No certificate file'));
+          return;
+        }
+
+        emit(CertificateSuccess(url));
       } catch (e) {
-        emit(CertificateError('Unexpected error: ${e.toString()}'));
+        emit(CertificateError(e.toString()));
       }
     });
 
-    // =======================================================
-    // 🔍 Search
-    // =======================================================
-    on<SearchCertificatesEvent>((event, emit) async {
 
+    on<LoadAllCertificatesEvent>((event, emit) async {
       emit(CertificateLoading());
-
       try {
-
-        final certificates =
-        await repository.searchCertificates(
-          event.fullName,
-        );
-
+        final certificates = await repository.getAllCertificates();
         emit(CertificateLoaded(certificates));
-
       } catch (e) {
+        emit(CertificateError(e.toString()));
+      }
+    });
 
+    on<SearchCertificatesEvent>((event, emit) async {
+      emit(CertificateLoading());
+      try {
+        final certificates = await repository.searchCertificates(event.fullName);
+        emit(CertificateLoaded(certificates));
+      } catch (e) {
         emit(CertificateError(e.toString()));
       }
     });

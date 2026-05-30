@@ -1,8 +1,4 @@
 // 📄 lib/screens/trainer/trainer_home_screen.dart
-// ============================================================
-// 🏠 الصفحة الرئيسية للمدرب (Trainer Home Screen)
-// ✅ النسخة الصحيحة - بدون CourseBloc
-// ============================================================
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,10 +9,7 @@ import 'trainer_chat_page.dart';
 import 'receive_student_projects_page.dart';
 import 'trainer_profile_page.dart';
 import 'trainer_courses_main_page.dart';
-
-// ============================================================
-// 🏠 القسم 1: شاشة التنقل الرئيسية (Bottom Navigation)
-// ============================================================
+import '../auth/login_screen.dart';
 
 class TrainerHomeScreen extends StatefulWidget {
   const TrainerHomeScreen({super.key});
@@ -38,49 +31,57 @@ class _TrainerHomeScreenState extends State<TrainerHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          _titles[_selectedIndex],
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.deepPurple,
-        centerTitle: true,
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.deepPurple, Colors.purple],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is AuthUnauthenticated) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (route) => false,
+          );
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            _titles[_selectedIndex],
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          backgroundColor: Colors.deepPurple,
+          centerTitle: true,
+          elevation: 0,
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.deepPurple, Colors.purple],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
           ),
         ),
-      ),
-      body: _screens[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        selectedItemColor: Colors.deepPurple,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), label: 'Chats'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-        ],
+        body: _screens[_selectedIndex],
+        bottomNavigationBar: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          currentIndex: _selectedIndex,
+          onTap: (index) => setState(() => _selectedIndex = index),
+          selectedItemColor: Colors.deepPurple,
+          unselectedItemColor: Colors.grey,
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.chat_bubble_outline),
+              label: 'Chats',
+            ),
+            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          ],
+        ),
       ),
     );
   }
 }
-
-// ============================================================
-// 📋 الصفحة الرئيسية للمدرب (بدون CourseBloc)
-// ============================================================
 
 class TrainerHomePage extends StatefulWidget {
   const TrainerHomePage({super.key});
@@ -96,13 +97,10 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
   String? _errorMessage;
 
   @override
-  @override
   void initState() {
     super.initState();
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authState = context.read<AuthBloc>().state;
-
       if (authState is AuthAuthenticated &&
           authState.user.userType.name == "trainer") {
         _loadTrainerData();
@@ -110,7 +108,6 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
     });
   }
 
-  // ✅ جلب بيانات المدرب (بدون استخدام CourseBloc)
   Future<void> _loadTrainerData() async {
     if (!mounted) return;
 
@@ -122,7 +119,6 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
     try {
       final authState = context.read<AuthBloc>().state;
       if (authState is! AuthAuthenticated) {
-
         setState(() {
           _isLoading = false;
           _errorMessage = 'User not authenticated';
@@ -130,46 +126,49 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
         return;
       }
 
-      // ✅ 1. جلب كورسات المدرب
       final coursesResponse = await ApiService.get(
         endpoint: 'course/trainer-my-courses/',
         requireAuth: true,
       );
 
-      print('📊 [Trainer] جلب كورسات المدرب - Status: ${coursesResponse['statusCode']}');
+      print(
+        '📊 [Trainer] جلب كورسات المدرب - Status: ${coursesResponse['statusCode']}',
+      );
 
       if (!mounted) return;
 
       if (coursesResponse['success']) {
         final data = coursesResponse['data'];
         final List<dynamic> coursesData = data is List ? data : [];
-
-        final List<CourseItem> fetchedCourses = coursesData.map((json) {
-          return CourseItem.fromJson(json);
-        }).toList();
-
+        final List<CourseItem> fetchedCourses = coursesData
+            .map((json) => CourseItem.fromJson(json))
+            .toList();
         setState(() {
           _courses = fetchedCourses;
         });
       }
 
-      // ✅ 2. جلب المشاريع المعلقة
       final submissionsResponse = await ApiService.get(
         endpoint: 'design-submission/trainer-all-submissions/',
         requireAuth: true,
       );
 
-      print('📊 [Trainer] جلب مشاريع الطلاب - Status: ${submissionsResponse['statusCode']}');
+      print(
+        '📊 [Trainer] جلب مشاريع الطلاب - Status: ${submissionsResponse['statusCode']}',
+      );
 
       if (!mounted) return;
 
       if (submissionsResponse['success']) {
         final submissionsData = submissionsResponse['data'];
-        final List<dynamic> submissions = submissionsData is List ? submissionsData : [];
+        final List<dynamic> submissions = submissionsData is List
+            ? submissionsData
+            : [];
 
         int pendingCount = 0;
         for (var submission in submissions) {
-          final status = submission['submission_status']?.toString().toLowerCase() ?? '';
+          final status =
+              submission['submission_status']?.toString().toLowerCase() ?? '';
           if (status == 'submitted' || status == 'pending') {
             pendingCount++;
           }
@@ -183,7 +182,6 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
       setState(() {
         _isLoading = false;
       });
-
     } catch (e) {
       print('❌ [Trainer] خطأ في جلب البيانات: $e');
       if (mounted) {
@@ -199,14 +197,7 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
   Widget build(BuildContext context) {
     final authState = context.watch<AuthBloc>().state;
 
-    // ✅ إذا المستخدم عمل logout
-    // نوقف بناء الصفحة مؤقتاً
-    if (authState is AuthUnauthenticated) {
-      return const SizedBox.shrink();
-    }
-
     String userName = 'Trainer';
-
     if (authState is AuthAuthenticated) {
       userName = authState.user.name;
     }
@@ -220,7 +211,6 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // بطاقة الترحيب
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -268,9 +258,7 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
                       shape: BoxShape.circle,
                     ),
                     child: Text(
-                      userName.isNotEmpty
-                          ? userName[0].toUpperCase()
-                          : 'T',
+                      userName.isNotEmpty ? userName[0].toUpperCase() : 'T',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 32,
@@ -284,7 +272,6 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
 
             const SizedBox(height: 24),
 
-            // بطاقات الإحصائيات
             Row(
               children: [
                 _buildStatCard(
@@ -305,7 +292,6 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
 
             const SizedBox(height: 24),
 
-            // زر استلام المشاريع
             _serviceCard(
               context,
               'Review Student Projects',
@@ -317,29 +303,20 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
 
             const SizedBox(height: 24),
 
-            // ============================================================
-            // 📚 قسم "My Courses" مع زر "See All"
-            // ============================================================
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
                   'My Courses',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-
-                // زر "See All"
                 if (_courses.isNotEmpty && !_isLoading)
                   GestureDetector(
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                          const TrainerCoursesMainPage(),
+                          builder: (context) => const TrainerCoursesMainPage(),
                         ),
                       );
                     },
@@ -357,7 +334,6 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
 
             const SizedBox(height: 12),
 
-            // قائمة الكورسات
             if (_isLoading)
               const Center(
                 child: Padding(
@@ -369,11 +345,7 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
               Center(
                 child: Column(
                   children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 48,
-                      color: Colors.red[300],
-                    ),
+                    Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
                     const SizedBox(height: 12),
                     Text(
                       _errorMessage!,
@@ -401,11 +373,7 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
                   ),
                   child: const Column(
                     children: [
-                      Icon(
-                        Icons.school_outlined,
-                        size: 60,
-                        color: Colors.grey,
-                      ),
+                      Icon(Icons.school_outlined, size: 60, color: Colors.grey),
                       SizedBox(height: 12),
                       Text(
                         'No courses yet',
@@ -418,27 +386,25 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
                       SizedBox(height: 8),
                       Text(
                         'Your courses will appear here',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey,
-                        ),
+                        style: TextStyle(fontSize: 13, color: Colors.grey),
                       ),
                     ],
                   ),
                 )
               else
-                ..._courses
-                    .take(3)
-                    .map((course) => _buildCourseCard(course)),
+                ..._courses.take(3).map((course) => _buildCourseCard(course)),
           ],
         ),
       ),
     );
   }
 
-
-
-  Widget _buildStatCard(IconData icon, String label, String value, Color color) {
+  Widget _buildStatCard(
+      IconData icon,
+      String label,
+      String value,
+      Color color,
+      ) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
@@ -446,17 +412,21 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              blurRadius: 8,
-            ),
+            BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 8),
           ],
         ),
         child: Column(
           children: [
             Icon(icon, color: color, size: 28),
             const SizedBox(height: 6),
-            Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
             Text(label, style: TextStyle(fontSize: 12, color: Colors.grey)),
           ],
         ),
@@ -464,9 +434,17 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
     );
   }
 
-  Widget _serviceCard(BuildContext context, String title, String sub, IconData icon, Color c, Widget page) {
+  Widget _serviceCard(
+      BuildContext context,
+      String title,
+      String sub,
+      IconData icon,
+      Color c,
+      Widget page,
+      ) {
     return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => page)),
+      onTap: () =>
+          Navigator.push(context, MaterialPageRoute(builder: (_) => page)),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(20),
@@ -479,7 +457,14 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
           children: [
             Icon(icon, color: c, size: 48),
             const SizedBox(height: 12),
-            Text(title, style: TextStyle(color: c, fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              title,
+              style: TextStyle(
+                color: c,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 4),
             Text(sub, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
           ],
@@ -488,17 +473,14 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
     );
   }
 
-  // ✅ دالة بناء بطاقة الكورس (مثل تصميم الطالب)
   Widget _buildCourseCard(CourseItem course) {
     return GestureDetector(
       onTap: () {
-        // ✅ عند الضغط على الكورس، ننتقل لصفحة الكورسات الرئيسية مع تمرير الكورس المحدد
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => TrainerCoursesMainPage(
-              selectedCourseId: course.id,
-            ),
+            builder: (context) =>
+                TrainerCoursesMainPage(selectedCourseId: course.id),
           ),
         );
       },
@@ -518,7 +500,6 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
         ),
         child: Row(
           children: [
-            // 🖼️ أيقونة الكورس
             Container(
               width: 55,
               height: 55,
@@ -533,21 +514,25 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
               ),
             ),
             const SizedBox(width: 16),
-
-            // 📝 معلومات الكورس
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     course.title,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 4),
-                  // عدد الطلاب
                   Row(
                     children: [
-                      Icon(Icons.people_outline, size: 12, color: Colors.grey[600]),
+                      Icon(
+                        Icons.people_outline,
+                        size: 12,
+                        color: Colors.grey[600],
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         '${course.studentsCount} students',
@@ -556,22 +541,10 @@ class _TrainerHomePageState extends State<TrainerHomePage> {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  // عدد الجلسات
-                  Row(
-                    children: [
-                      Icon(Icons.video_library, size: 11, color: Colors.grey[500]),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${course.sessions.length} sessions',
-                        style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-                      ),
-                    ],
-                  ),
+
                 ],
               ),
             ),
-
-            // 🏷️ شارة المستوى
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(

@@ -287,14 +287,7 @@ class _HomePageState extends State<HomePage> {
                             style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 12),
                         // شارة المستوى (Level Badge)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),  // خلفية شبه شفافة
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Text('Level 3', style: TextStyle(color: Colors.white)),
-                        ),
+
                       ],
                     ),
                     // أيقونة المدرسة في دائرة
@@ -553,28 +546,12 @@ class _HomePageState extends State<HomePage> {
                       Text(course.trainerName,  // اسم المدرب
                           style: TextStyle(fontSize: 11, color: Colors.grey[600])),
                       const SizedBox(width: 12),
-                      Icon(Icons.people_outline, size: 12, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Text('${course.studentsCount} students',  // عدد الطلاب
-                          style: TextStyle(fontSize: 11, color: Colors.grey[600])),
                     ],
                   ),
                   const SizedBox(height: 4),
 
                   // صف: المدة + عدد الجلسات
-                  Row(
-                    children: [
-                      Icon(Icons.access_time, size: 11, color: Colors.grey[500]),
-                      const SizedBox(width: 4),
-                      Text(course.totalHours,  // المدة الكلية
-                          style: TextStyle(fontSize: 10, color: Colors.grey[500])),
-                      const SizedBox(width: 12),
-                      Icon(Icons.video_library, size: 11, color: Colors.grey[500]),
-                      const SizedBox(width: 4),
-                      Text('${course.sessions.length} sessions',  // عدد الجلسات
-                          style: TextStyle(fontSize: 10, color: Colors.grey[500])),
-                    ],
-                  ),
+
                 ],
               ),
             ),

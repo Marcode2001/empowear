@@ -153,7 +153,19 @@ class ApiService {
       // 🔹 إذا كان الرد ناجحاً (2xx)
       if (response.statusCode >= 200 && response.statusCode < 300) {
         result['success'] = true;
-        result['data'] = decoded;
+        if (decoded is Map<String, dynamic>) {
+          result['data'] =
+              decoded['data'] ??
+                  decoded['certificate'] ??
+                  decoded;
+
+          result['message'] =
+              decoded['message'] ??
+                  decoded['detail'] ??
+                  'Success';
+        } else {
+          result['data'] = decoded;
+        }
 
         if (decoded is Map<String, dynamic>) {
           result['message'] = decoded['message'] ?? decoded['detail'] ?? 'Success';

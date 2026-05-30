@@ -1,3 +1,4 @@
+//lib/screen/trainee/certificate_page.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -21,30 +22,40 @@ class _CertificateViewerPageState
     extends State<CertificateViewerPage> {
 
   bool _isLoading = true;
-  String? _error;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _downloadAndOpenPdf();
+      _downloadAndOpenPdf(widget.pdfUrl);
     });
   }
 
-  Future<void> _downloadAndOpenPdf() async {
-    try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
+  Future<void> _downloadAndOpenPdf(String url) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
-      final response =
-      await http.get(Uri.parse(widget.pdfUrl));
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Downloading certificate...'),
+        ),
+      );
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Accept': 'application/pdf',
+        },
+      );
 
       if (response.statusCode != 200) {
         throw Exception(
-          'Failed to download certificate (${response.statusCode})',
+          'Failed to download certificate',
         );
       }
 
@@ -58,63 +69,57 @@ class _CertificateViewerPageState
 
       final result = await OpenFile.open(file.path);
 
-      if (result.type != ResultType.done) {
+      if (result.type == ResultType.done) {
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      } else {
         throw Exception(result.message);
       }
 
-      if (mounted) {
-        Navigator.pop(context);
-      }
     } catch (e) {
+
       setState(() {
-        _error = e.toString();
+        _errorMessage = e.toString();
         _isLoading = false;
       });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Error: $e',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
           'Certificate',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.white),
         ),
         backgroundColor: Colors.deepPurple,
       ),
+
       body: Center(
         child: _isLoading
             ? const Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Downloading certificate...'),
+            SizedBox(height: 20),
+            Text('Opening certificate...'),
           ],
         )
-            : Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.error_outline,
-              color: Colors.red,
-              size: 60,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _error ?? 'Unknown error',
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _downloadAndOpenPdf,
-              child: const Text('Try Again'),
-            ),
-          ],
+            : Text(
+          _errorMessage ?? '',
+          style: const TextStyle(color: Colors.red),
         ),
       ),
     );

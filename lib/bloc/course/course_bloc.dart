@@ -117,7 +117,19 @@ class CourseBloc extends Bloc<CourseEvent, CourseState> {
       // ✅ نستخدم الدالة الموجودة مع فصل المنطق
       if (event.userType == UserType.trainee) {
         final courses = await _courseRepository.loadAvailableCourses(event.userId);
-        emit(AvailableCoursesLoaded(availableCourses: courses));
+        final registeredCourses =
+        await _courseRepository.loadRegisteredCourses(event.userId);
+
+        final registeredIds =
+        registeredCourses.map((e) => e.id).toSet();
+
+        final updatedCourses = courses.map((course) {
+          return course.copyWith(
+            isRegistered: registeredIds.contains(course.id),
+          );
+        }).toList();
+
+        emit(AvailableCoursesLoaded(availableCourses: updatedCourses));
       } else {
         // 👨‍🏫 المدرب ما يحتاج يشوف كورسات للتسجيل
         emit(AvailableCoursesLoaded(availableCourses: []));

@@ -52,25 +52,35 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
     _loadData();
   }
 
-  void _loadData() {
+  void _loadData() async {
     if (widget.registeredCourseIds != null) {
       registeredIds = List.from(widget.registeredCourseIds!);
     }
+
     final authState = context.read<AuthBloc>().state;
+
     if (authState is AuthAuthenticated) {
+      final repo = CourseRepository();
+
+      // 📌 أهم سطر: يرجّع الكورسات المسجلة من السيرفر
+      final registeredCourses =
+      await repo.loadRegisteredCourses(authState.user.id);
+
+      // 📌 نحولهم إلى IDs
+      registeredIds = registeredCourses.map((c) => c.id).toList();
+
+      // 📌 نحمل الكورسات المتاحة
       context.read<CourseBloc>().add(
-        LoadAvailableCoursesEvent(userId: authState.user.id , userType: authState.user.userType,),
+        LoadAvailableCoursesEvent(
+          userId: authState.user.id,
+          userType: authState.user.userType,
+        ),
       );
     }
   }
 
   bool _isCourseRegistered(String courseId) {
-    final courseState = context.read<CourseBloc>().state;
-
-    if (courseState is RegisteredCoursesLoaded) {
-      return courseState.registeredCourses.any((c) => c.id == courseId);
-    }
-    return false;
+    return registeredIds.contains(courseId);
   }
 
   // ============================================================
