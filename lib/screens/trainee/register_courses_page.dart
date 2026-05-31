@@ -62,14 +62,11 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
     if (authState is AuthAuthenticated) {
       final repo = CourseRepository();
 
-      // 📌 أهم سطر: يرجّع الكورسات المسجلة من السيرفر
       final registeredCourses =
       await repo.loadRegisteredCourses(authState.user.id);
 
-      // 📌 نحولهم إلى IDs
       registeredIds = registeredCourses.map((c) => c.id).toList();
 
-      // 📌 نحمل الكورسات المتاحة
       context.read<CourseBloc>().add(
         LoadAvailableCoursesEvent(
           userId: authState.user.id,
@@ -83,9 +80,6 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
     return registeredIds.contains(courseId);
   }
 
-  // ============================================================
-  // ✅ دالة التسجيل فقط - بدون إلغاء تسجيل
-  // ============================================================
   void _proceedToPayment(CourseItem course) {
     if (_isCourseRegistered(course.id)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -102,60 +96,32 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
         builder: (context) => PaymentPage(
           course: course,
           onPaymentSuccess: () async {
-
-            // =====================================================
-            // ✅ إنشاء محادثة تلقائياً بعد التسجيل بالكورس
-            // =====================================================
-
             try {
-
               final chatRepo = ChatRepository();
-
               final result = await chatRepo.createConversationForTrainee(
                 int.parse(course.id),
               );
-
-              print("💬 CREATE CONVERSATION RESULT:");
-              print(result);
-
+              print("💬 CREATE CONVERSATION RESULT: $result");
             } catch (e) {
-
               print("❌ CREATE CONVERSATION ERROR: $e");
             }
 
-            // =====================================================
-            // ✅ تحديث الواجهة
-            // =====================================================
-
             setState(() {
-
               registeredIds.add(course.id);
-
-              final index =
-              availableCourses.indexWhere((c) => c.id == course.id);
-
+              final index = availableCourses.indexWhere((c) => c.id == course.id);
               if (index != -1) {
-
-                availableCourses[index] =
-                    availableCourses[index].copyWith(
-                      isRegistered: true,
-                    );
+                availableCourses[index] = availableCourses[index].copyWith(
+                  isRegistered: true,
+                );
               }
             });
 
             if (widget.onRegister != null) {
-
               widget.onRegister!([course]);
             }
 
-            // =====================================================
-            // ✅ تحديث قائمة المحادثات مباشرة
-            // =====================================================
-
             final auth = context.read<AuthBloc>().state;
-
             if (auth is AuthAuthenticated) {
-
               context.read<ChatBloc>().add(
                 LoadConversationsEvent(
                   userId: auth.user.id,
@@ -178,8 +144,6 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
 
   void _toggleCourseExpansion(String courseId) {
     final isRegistered = _isCourseRegistered(courseId);
-
-    // ✅ فقط الكورسات المسجلة يمكن توسيعها
     if (!isRegistered) return;
 
     setState(() {
@@ -234,7 +198,6 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
           if (state is AvailableCoursesLoaded && !_isProcessing) {
             setState(() {
               availableCourses = state.availableCourses;
-              // مزامنة registeredIds مع الكورسات المستلمة
               for (var course in availableCourses) {
                 if (course.isRegistered && !registeredIds.contains(course.id)) {
                   registeredIds.add(course.id);
@@ -269,7 +232,18 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
             : ListView.builder(
           padding: const EdgeInsets.all(16),
           itemCount: availableCourses.length,
-          itemBuilder: (context, index) => _buildCourseCard(availableCourses[index]),
+          itemBuilder: (context, index) {
+            // ✅ إضافة مسافة في آخر عنصر
+            if (index == availableCourses.length - 1) {
+              return Column(
+                children: [
+                  _buildCourseCard(availableCourses[index]),
+                  const SizedBox(height: 80), // ✅ مسافة كبيرة في نهاية الصفحة لرفع المحتوى عن زرار الموبايل
+                ],
+              );
+            }
+            return _buildCourseCard(availableCourses[index]);
+          },
         ),
       ),
     );
@@ -331,7 +305,6 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
                     ],
                   ),
                 ),
-                // ✅ زر التسجيل فقط - بدون زر إلغاء التسجيل
                 if (isRegistered)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -363,40 +336,161 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
               ],
             ),
           ),
-          // Course info
+
+          // ============================================================
+          // ✅ المعلومات الأساسية (بشكل منظم)
+          // ============================================================
           Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.person, size: 14, color: Colors.grey[600]),
-                const SizedBox(width: 4),
-                Expanded(child: Text(course.trainerName, style: TextStyle(fontSize: 12, color: Colors.grey[600]))),
-                const SizedBox(width: 12),
-                Icon(Icons.star, size: 14, color: Colors.amber),
-                const SizedBox(width: 4),
-                Text('Level ${course.levelNumber}', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                const SizedBox(width: 12),
-                Icon(Icons.access_time, size: 14, color: Colors.grey[600]),
-                const SizedBox(width: 4),
-                Text(
-                  course.totalHours != '0h' ? course.totalHours : 'Not specified',
-                  style: TextStyle(fontSize: 12, color: course.totalHours != '0h' ? Colors.grey[600] : Colors.red),
+                // الصف الأول: اسم المدرب والمستوى
+                Row(
+                  children: [
+                    Icon(Icons.person, size: 16, color: Colors.deepPurple),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        course.trainerName,
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black87),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.deepPurple.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.bar_chart, size: 12, color: Colors.deepPurple),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Level ${course.levelNumber}',
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Colors.deepPurple),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                // ✅ أيقونة التوسع - فقط للكورسات المسجلة تكون قابلة للضغط
-                if (isRegistered)
-                  IconButton(
-                    icon: Icon(isExpanded ? Icons.expand_less : Icons.expand_more, color: Colors.deepPurple),
-                    onPressed: () => _toggleCourseExpansion(course.id),
-                  )
-                else
-                // ✅ للكورسات غير المسجلة: أيقونة مقفلة وغير قابلة للضغط
+
+                const SizedBox(height: 12),
+
+                // الصف الثاني: نوع الكورس والسعر
+                Row(
+                  children: [
+                    // نوع الكورس
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Icon(Icons.category, size: 16, color: Colors.deepPurple),
+                          const SizedBox(width: 6),
+                          Text(
+                            course.courseType,
+                            style: const TextStyle(fontSize: 12, color: Colors.black87),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // السعر
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.attach_money, size: 12, color: Colors.green),
+                          const SizedBox(width: 2),
+                          Text(
+                            '${course.price}',
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // ✅ الأدوات المطلوبة (إذا وجدت)
+                if (course.toolsRequired.isNotEmpty)
                   Container(
                     padding: const EdgeInsets.all(8),
-                    child: Icon(Icons.lock, size: 18, color: Colors.grey[400]),
+                    decoration: BoxDecoration(
+                      color: Colors.teal.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.teal.withOpacity(0.2)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.build, size: 16, color: Colors.teal),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Tools: ${course.toolsRequired}',
+                            style: const TextStyle(fontSize: 11, color: Colors.teal),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+
+                const SizedBox(height: 12),
+
+                // ✅ زر عرض الجلسات (منظم بشكل أفضل)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (isRegistered)
+                      TextButton.icon(
+                        onPressed: () => _toggleCourseExpansion(course.id),
+                        icon: Icon(isExpanded ? Icons.expand_less : Icons.expand_more, color: Colors.deepPurple),
+                        label: Text(
+                          isExpanded ? 'Hide Sessions' : 'View Sessions',
+                          style: const TextStyle(color: Colors.deepPurple, fontSize: 12),
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          backgroundColor: Colors.deepPurple.withOpacity(0.05),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.lock, size: 14, color: Colors.grey[600]),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Register to access content',
+                              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
               ],
             ),
           ),
+
           // ✅ Expanded sessions - فقط للكورسات المسجلة
           if (isExpanded && isRegistered) ...[
             const Divider(height: 1),
@@ -453,6 +547,7 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
               },
             ),
           ],
+
           // Footer
           Container(
             padding: const EdgeInsets.all(12),
@@ -463,34 +558,8 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Icon(Icons.school, size: 16, color: isRegistered ? Colors.deepPurple : Colors.grey),
-                    const SizedBox(width: 4),
-                    Text(
-                      isRegistered ? '${_cachedSessions[course.id]?.length ?? 0} Sessions' : 'Locked - Register to access',
-                      style: TextStyle(fontSize: 12, color: isRegistered ? Colors.deepPurple : Colors.grey),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Icon(
-                      isRegistered ? Icons.lock_open : Icons.lock,
-                      size: 14,
-                      color: isRegistered ? Colors.green : Colors.grey[600],
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      isRegistered ? 'Content unlocked' : 'Register to access',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isRegistered ? Colors.green : Colors.grey[600],
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
+
+
               ],
             ),
           ),
@@ -610,11 +679,16 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
             child: Icon(icon, size: 18, color: color),
           ),
           const SizedBox(width: 10),
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(content.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                Text(
+                  content.title,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 4),
                 Text(
                   '${content.contentType} • Part ${content.contentOrder}',
                   style: TextStyle(fontSize: 11, color: Colors.grey[500]),
@@ -622,6 +696,7 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
               ],
             ),
           ),
+
           IconButton(
             icon: const Icon(Icons.open_in_new, size: 18, color: Colors.deepPurple),
             onPressed: () {
@@ -634,7 +709,10 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
                 );
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('No file available for this content'), backgroundColor: Colors.orange),
+                  const SnackBar(
+                    content: Text('No file available for this content'),
+                    backgroundColor: Colors.orange,
+                  ),
                 );
               }
             },

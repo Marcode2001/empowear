@@ -374,20 +374,39 @@ class _JobOpportunitiesPageState extends State<JobOpportunitiesPage> {
                       children: [
                         const SizedBox(height: 4),
                         Text(job.company),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
+
+                        // 📍 Location row (fixed overflow)
                         Row(
                           children: [
-                            const Icon(Icons.location_on,
-                                size: 14, color: Colors.grey),
+                            const Icon(Icons.location_on, size: 14, color: Colors.grey),
                             const SizedBox(width: 4),
-                            Text(job.location,
-                                style: const TextStyle(fontSize: 12)),
-                            const SizedBox(width: 12),
-                            const Icon(Icons.attach_money,
-                                size: 14, color: Colors.grey),
+                            Expanded(
+                              child: Text(
+                                job.location,
+                                style: const TextStyle(fontSize: 12),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 4),
+
+                        // 💰 Salary row (fixed overflow)
+                        Row(
+                          children: [
+                            const Icon(Icons.attach_money, size: 14, color: Colors.grey),
                             const SizedBox(width: 4),
-                            Text(job.salary,
-                                style: const TextStyle(fontSize: 12)),
+                            Expanded(
+                              child: Text(
+                                job.salary,
+                                style: const TextStyle(fontSize: 12),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
                           ],
                         ),
                       ],
@@ -426,12 +445,12 @@ class _JobOpportunitiesPageState extends State<JobOpportunitiesPage> {
 }
 
 // ============================================================
-// 💼 نافذة تفاصيل الوظيفة (Bottom Sheet) - تظهر عند الضغط على وظيفة
+// 💼 نافذة تفاصيل الوظيفة (Bottom Sheet) - المعدلة
 // ============================================================
 class JobDetailSheet extends StatefulWidget {
-  final JobModel job;                              // بيانات الوظيفة
-  final bool isPersistedApplied;                  // هل تم التقديم مسبقاً (من SharedPreferences)؟
-  final Function(String, bool) onJobStatusChanged; // دالة لإعلام الشاشة الرئيسية بتغير الحالة
+  final JobModel job;
+  final bool isPersistedApplied;
+  final Function(String, bool) onJobStatusChanged;
 
   const JobDetailSheet({
     super.key,
@@ -445,41 +464,28 @@ class JobDetailSheet extends StatefulWidget {
 }
 
 class _JobDetailSheetState extends State<JobDetailSheet> {
-  bool _isProcessing = false;  // لمنع الضغط المتكرر على زر التقديم أثناء المعالجة
-  late bool _localIsApplied;    // الحالة المحلية للزر (مقدم عليه أم لا)
+  bool _isProcessing = false;
+  late bool _localIsApplied;
 
   @override
   void initState() {
     super.initState();
-    // تحديد الحالة الابتدائية للزر
-    // إذا كان مقدم عليه من قبل (من SharedPreferences) أو الوظيفة نفسها تقول ذلك
     _localIsApplied = widget.isPersistedApplied || widget.job.isApplied;
   }
 
-  // ============================================================
-  // 🚀 دالة التقديم على الوظيفة
-  // ============================================================
   void _applyForJob() {
-    // منع التقديم إذا:
-    // 1. جاري المعالجة بالفعل
-    // 2. تم التقديم مسبقاً (الزر معطل)
     if (_isProcessing || _localIsApplied) return;
 
-    // الحصول على حالة المصادقة الحالية
     final authState = context.read<AuthBloc>().state;
 
-    // التأكد من أن المستخدم مسجل دخول
     if (authState is AuthAuthenticated) {
-      // تفعيل حالة المعالجة وتغيير مظهر الزر
       setState(() {
         _isProcessing = true;
         _localIsApplied = true;
       });
 
-      // الخطوة 1: حفظ الحالة محلياً في SharedPreferences فوراً لمنع التقديم المزدوج
       widget.onJobStatusChanged(widget.job.id, true);
 
-      // الخطوة 2: إرسال الحدث إلى الـ Bloc للتسجيل في الخادم
       context.read<JobBloc>().add(
         ApplyForJobEvent(
           jobId: widget.job.id,
@@ -489,7 +495,6 @@ class _JobDetailSheetState extends State<JobDetailSheet> {
         ),
       );
 
-      // الخطوة 3: إغلاق النافذة بعد نصف ثانية مع عرض رسالة نجاح
       Future.delayed(const Duration(milliseconds: 600), () {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -498,11 +503,10 @@ class _JobDetailSheetState extends State<JobDetailSheet> {
               backgroundColor: Colors.green,
             ),
           );
-          Navigator.pop(context); // إغلاق النافذة المنبثقة
+          Navigator.pop(context);
         }
       });
     } else {
-      // إذا لم يكن المستخدم مسجل دخول، نعرض رسالة تنبيه
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('⚠️ Please login first to apply'),
@@ -512,15 +516,14 @@ class _JobDetailSheetState extends State<JobDetailSheet> {
     }
   }
 
-  // ============================================================
-  // 🎨 بناء واجهة نافذة التفاصيل
-  // ============================================================
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
-      initialChildSize: 0.85,  // الحجم الابتدائي (85% من الشاشة)
-      minChildSize: 0.5,       // أصغر حجم يمكن السحب إليه (50%)
-      maxChildSize: 0.95,      // أكبر حجم يمكن السحب إليه (95%)
+      // ✅ تعديل الأحجام لتجنب الـ Overflow
+      initialChildSize: 0.75,  // تم التخفيض من 0.85 إلى 0.75
+      minChildSize: 0.5,
+      maxChildSize: 0.9,       // تم التخفيض من 0.95 إلى 0.9
+      expand: false,           // ✅ إضافة هذه الخاصية لمنع التمدد الزائد
       builder: (context, scrollController) => Container(
         decoration: const BoxDecoration(
           color: Colors.white,
@@ -531,7 +534,7 @@ class _JobDetailSheetState extends State<JobDetailSheet> {
         ),
         child: Column(
           children: [
-            // شريط السحب (Drag Handle) - يظهر في أعلى النافذة
+            // شريط السحب (Drag Handle)
             Container(
               margin: const EdgeInsets.only(top: 12),
               width: 50,
@@ -549,7 +552,6 @@ class _JobDetailSheetState extends State<JobDetailSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // شعار الشركة (دائري ملون)
                     Center(
                       child: Container(
                         width: 80,
@@ -569,7 +571,6 @@ class _JobDetailSheetState extends State<JobDetailSheet> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // عنوان الوظيفة
                     Center(
                       child: Text(
                         widget.job.title,
@@ -580,7 +581,6 @@ class _JobDetailSheetState extends State<JobDetailSheet> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    // اسم الشركة
                     Center(
                       child: Text(
                         widget.job.company,
@@ -588,7 +588,6 @@ class _JobDetailSheetState extends State<JobDetailSheet> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    // عرض تفاصيل الوظيفة في صفوف منظمة
                     _buildInfoRow(Icons.location_on, 'Location', widget.job.location),
                     const SizedBox(height: 12),
                     _buildInfoRow(Icons.attach_money, 'Salary', widget.job.salary),
@@ -603,7 +602,6 @@ class _JobDetailSheetState extends State<JobDetailSheet> {
                       _formatDate(widget.job.deadline),
                     ),
                     const Divider(height: 32),
-                    // قسم وصف الوظيفة
                     const Text(
                       'Description',
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -614,7 +612,6 @@ class _JobDetailSheetState extends State<JobDetailSheet> {
                       style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                     ),
                     const SizedBox(height: 20),
-                    // قسم متطلبات الوظيفة (قائمة نقطية)
                     const Text(
                       'Requirements',
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -635,14 +632,10 @@ class _JobDetailSheetState extends State<JobDetailSheet> {
                       ),
                     ),
                     const SizedBox(height: 32),
-                    // زر التقديم الرئيسي
                     SizedBox(
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton(
-                        // الزر يكون معطل إذا:
-                        // - تم التقديم مسبقاً (_localIsApplied = true)
-                        // - أو جاري معالجة الطلب (_isProcessing = true)
                         onPressed:
                         _localIsApplied || _isProcessing ? null : _applyForJob,
                         style: ElevatedButton.styleFrom(
@@ -668,6 +661,8 @@ class _JobDetailSheetState extends State<JobDetailSheet> {
                         ),
                       ),
                     ),
+                    // ✅ إضافة مسافة إضافية في النهاية لتفادي الـ Overflow
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),
@@ -678,9 +673,6 @@ class _JobDetailSheetState extends State<JobDetailSheet> {
     );
   }
 
-  // ============================================================
-  // 🏗️ دالة مساعدة لبناء صف المعلومات (أيقونة + تسمية + قيمة)
-  // ============================================================
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Row(
       children: [
@@ -700,8 +692,5 @@ class _JobDetailSheetState extends State<JobDetailSheet> {
     );
   }
 
-  // ============================================================
-  // 📅 دالة مساعدة لتنسيق التاريخ (يوم/شهر/سنة)
-  // ============================================================
   String _formatDate(DateTime date) => '${date.day}/${date.month}/${date.year}';
 }

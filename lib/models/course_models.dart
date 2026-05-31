@@ -1,12 +1,9 @@
 // 📄 lib/models/course_models.dart
-// ============================================================
-// 📦 نماذج بيانات الكورسات - الإصدار النهائي
-// ============================================================
 
 import 'package:flutter/material.dart';
 
 // ============================================================
-// 📚 نموذج محتوى الكورس (CourseContent)
+// 📚 نموذج محتوى الكورس
 // ============================================================
 
 class CourseContent {
@@ -19,6 +16,10 @@ class CourseContent {
   final int contentOrder;
   final String? fileUrl;
 
+  // ✅ NEW FIELDS (added safely)
+  final String? courseType;
+  final String? toolsRequired;
+
   CourseContent({
     required this.id,
     required this.course,
@@ -28,6 +29,10 @@ class CourseContent {
     required this.contentType,
     required this.contentOrder,
     this.fileUrl,
+
+    // ✅ NEW
+    this.courseType,
+    this.toolsRequired,
   });
 
   factory CourseContent.fromJson(Map<String, dynamic> json) {
@@ -49,6 +54,10 @@ class CourseContent {
       contentType: json['content_type'] ?? 'FILE',
       contentOrder: json['content_order'] ?? 0,
       fileUrl: fileUrlValue,
+
+      // ✅ NEW SAFE PARSING
+      courseType: json['course_type']?.toString(),
+      toolsRequired: json['tools_required']?.toString(),
     );
   }
 
@@ -85,11 +94,9 @@ class CourseContent {
   String get fullUrl {
     if (!hasFile) return '';
 
-    if (fileUrl!.startsWith('http')) {
-      return fileUrl!;
-    }
+    if (fileUrl!.startsWith('http')) return fileUrl!;
 
-    const baseUrl = 'http://192.168.1.22:8000';
+    const baseUrl = 'http://localhost:8000';
 
     String relativePath = fileUrl!;
     if (!relativePath.startsWith('/')) {
@@ -167,10 +174,11 @@ class Session {
     return Session(
       id: json['id'] ?? 0,
       course: json['course'] ?? 0,
-      courseTitle: json['course_title'] ?? 'كورس غير معروف',
-      title: json['session_title'] ?? 'جلسة بدون عنوان',
+      courseTitle: json['course_title'] ?? '',
+      title: json['session_title'] ?? '',
       description: json['description'] ?? '',
       sessionOrder: json['session_order'],
+
       contents:
       contentsData.map((c) => CourseContent.fromJson(c)).toList(),
     );
@@ -223,34 +231,26 @@ class CourseItem {
     final List<dynamic> sessionsData = json['sessions'] ?? [];
 
     final priceValue = json['price'];
-    final priceString = priceValue is num
-        ? priceValue.toStringAsFixed(2)
-        : (priceValue?.toString() ?? '0');
+    final priceString = priceValue?.toString() ?? '0';
 
-    String trainerName = '';
-
-    if (json['trainer_full_name'] != null) {
-      trainerName = json['trainer_full_name'];
-    } else {
-      trainerName = 'مدرب غير معروف';
-    }
+    final trainerName =
+        json['trainer_full_name']?.toString() ?? 'مدرب غير معروف';
 
     return CourseItem(
       id: json['id']?.toString() ?? '',
       title: json['title'] ?? 'كورس بدون عنوان',
       description: json['description'] ?? '',
       levelNumber: json['level_number'] ?? 1,
-      courseType: json['course_type'] ?? 'عام',
+      courseType: json['course_type'] ?? '',
       price: priceString,
       toolsRequired: json['tools_required'] ?? '',
       trainerProfile: json['trainer_profile'] ?? 0,
       trainerName: trainerName,
-
-      // 🔥 FIX الأساسي
       studentsCount:
-      json['current_enrolled_students_count'] ?? 0,
-
-      totalHours: json['totalHours'] ?? '0h',
+      json['students_count'] ??
+          json['current_enrolled_students_count'] ??
+          0,
+      totalHours: json['totalHours']?.toString() ?? '0h',
       sessions: sessionsData.map((s) => Session.fromJson(s)).toList(),
       isRegistered: json['is_registered'] ?? false,
       progress: json['progress'] ?? 0,

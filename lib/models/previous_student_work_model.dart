@@ -16,7 +16,7 @@ class PreviousStudentWork {
       designerName: json['designer_name'] ?? '',
 
       imageUrl:
-      'http://192.168.1.22:8000${json['image_url']}',
+      'http://localhost:8000${json['image_url']}',
     );
   }
 }

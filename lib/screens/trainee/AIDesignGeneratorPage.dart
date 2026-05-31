@@ -390,7 +390,7 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
       }
 
       // ===============================
-      // بناء النص الناتج
+      // بناء النص الناتج (بدون 3D model message و analysis)
       // ===============================
       String resultText = '';
 
@@ -408,22 +408,6 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
         resultText += '🔥 Trending Colors:\n';
         for (var color in trendingColors) {
           resultText += '   • $color\n';
-        }
-        resultText += '\n';
-      }
-
-      // ✅ معلومات الـ 3D model
-      if (resultUrl != null && resultUrl.toLowerCase().endsWith('.glb')) {
-        resultText += '🎮 3D Model Generated Successfully!\n\n';
-      }
-
-      // ✅ التحليل النصي
-      if (analysisResults.isNotEmpty) {
-        resultText += '📝 Analysis:\n';
-        for (var item in analysisResults) {
-          if (item['text_en'] != null && item['text_en'].toString().isNotEmpty) {
-            resultText += '   • ${item['text_en']}\n';
-          }
         }
         resultText += '\n';
       }
@@ -592,7 +576,7 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
                           child: Text(
                             'Enter a season, describe your idea, or upload a sketch to convert for 3D',
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                            style: TextStyle(fontSize: 12, color:  Colors.deepPurple.withOpacity(0.5),),
                           ),
                         ),
                       ],
@@ -629,9 +613,25 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
                           controller: _seasonController,
                           onChanged: _onSeasonChanged,
                           decoration: InputDecoration(
-                            hintText: 'Spring, Summer, Autumn, or Winter',
+                            hintText: 'Choose season',
+                            hintStyle: TextStyle(
+                              color: Colors.grey.withOpacity(0.5),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w400,
+                            ),
                             prefixIcon: const Icon(Icons.spa, size: 18, color: Colors.deepPurple),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.deepPurple.withOpacity(0.3)),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.deepPurple.withOpacity(0.3)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
+                            ),
                             filled: true,
                             fillColor: Colors.white,
                             errorText: _seasonError.isNotEmpty ? _seasonError : null,
@@ -703,7 +703,23 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
                           maxLines: 3,
                           decoration: InputDecoration(
                             hintText: 'Describe what you want to create...',
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            hintStyle: TextStyle(
+                              color: Colors.grey.withOpacity(0.5),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w400,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey[300]!), // 🟡 رمادي فاتح للبوردر
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey[300]!), // 🟡 رمادي فاتح للبوردر
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey[500]!, width: 2), // 🟡 رمادي غامق شوي عند التركيز
+                            ),
                             filled: true,
                             fillColor: Colors.white,
                           ),
@@ -866,10 +882,10 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: (_is3DResult ? Colors.purple : Colors.blue).withOpacity(0.08),
+                        color: Colors.deepPurple.withOpacity(0.08),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: (_is3DResult ? Colors.purple : Colors.blue).withOpacity(0.3),
+                          color: Colors.deepPurple.withOpacity(0.3),
                         ),
                       ),
                       child: Column(
@@ -879,7 +895,7 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
                             children: [
                               Icon(
                                 _is3DResult ? Icons.three_mp : Icons.description,
-                                color: _is3DResult ? Colors.purple : Colors.blue,
+                                color: Colors.deepPurple,
                                 size: 24,
                               ),
                               const SizedBox(width: 10),
@@ -888,13 +904,20 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
-                                  color: _is3DResult ? Colors.purple : Colors.blue,
+                                  color: Colors.deepPurple,
                                 ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 12),
-                          Text(_generatedResult!, style: const TextStyle(fontSize: 13, height: 1.5)),
+                          Text(
+                            _generatedResult!,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              height: 1.5,
+                              color: Colors.deepPurple,
+                            ),
+                          ),
 
                           // عرض الـ 3D model
                           if (_resultImageUrl != null && _resultImageUrl!.toLowerCase().endsWith('.glb'))

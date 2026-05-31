@@ -415,7 +415,7 @@ class _LoginScreenState extends State<LoginScreen>
                                               : const Row(
                                             mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
-                                              Icon(Icons.login, size: 20),
+                                              Icon(Icons.login, size: 20, color: Colors.white,),
                                               SizedBox(width: 10),
                                               Text(
                                                 'Sign In',

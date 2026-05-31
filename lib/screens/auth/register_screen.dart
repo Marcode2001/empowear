@@ -23,6 +23,9 @@ class _RegisterScreenState extends State<RegisterScreen>
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _locationController = TextEditingController();
+  final _birthDateController = TextEditingController();
 
   UserType _selectedUserType = UserType.trainee;  // افتراضي: متدرب
   bool _obscurePassword = true;
@@ -83,7 +86,36 @@ class _RegisterScreenState extends State<RegisterScreen>
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _phoneController.dispose();
+    _locationController.dispose();
+    _birthDateController.dispose();
     super.dispose();
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(2002, 8, 5),
+      firstDate: DateTime(1950),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF6C63FF),
+              onPrimary: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _birthDateController.text = "${picked.toLocal()}".split(' ')[0];
+      });
+    }
   }
 
   @override
@@ -336,6 +368,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                     return null;
                                   },
                                 ),
+
                                 const SizedBox(height: 16),
 
                                 // ==================== حقل كلمة المرور ====================
@@ -466,6 +499,164 @@ class _RegisterScreenState extends State<RegisterScreen>
                                     return null;
                                   },
                                 ),
+                                const SizedBox(height: 16),
+
+                                // ==================== حقل الموقع ====================
+                                TextFormField(
+                                  controller: _locationController,
+                                  style: const TextStyle(color: Colors.black87),
+                                  decoration: InputDecoration(
+                                    labelText: 'Location',
+                                    labelStyle: TextStyle(
+                                      color: Colors.grey[400],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    prefixIcon: Icon(
+                                      Icons.location_on_outlined,
+                                      color: const Color(0xFF6C63FF),
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.grey.shade50.withOpacity(0.02),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: BorderSide(
+                                        color: Colors.purple.withOpacity(0.2),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: const BorderSide(
+                                        color: Color(0xFF6C63FF),
+                                        width: 2,
+                                      ),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 16,
+                                    ),
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Enter location';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+
+                                // ==================== حقل رقم الهاتف ====================
+                                TextFormField(
+                                  controller: _phoneController,
+                                  style: const TextStyle(color: Colors.black87),
+                                  keyboardType: TextInputType.phone,
+                                  decoration: InputDecoration(
+                                    labelText: 'Phone Number',
+                                    labelStyle: TextStyle(
+                                      color: Colors.grey[400],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    prefixIcon: Icon(
+                                      Icons.phone_outlined,
+                                      color: const Color(0xFF6C63FF),
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.grey.shade50.withOpacity(0.02),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: BorderSide(
+                                        color: Colors.purple.withOpacity(0.2),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: const BorderSide(
+                                        color: Color(0xFF6C63FF),
+                                        width: 2,
+                                      ),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 16,
+                                    ),
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Enter phone number';
+                                    }
+                                    if (value.length < 9) {
+                                      return 'Phone number must be at least 9 digits';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+
+                                // ==================== حقل تاريخ الميلاد ====================
+                                TextFormField(
+                                  controller: _birthDateController,
+                                  readOnly: true,
+                                  onTap: () => _selectDate(context),
+                                  style: const TextStyle(color: Colors.black87),
+                                  decoration: InputDecoration(
+                                    labelText: 'Birth Date (YYYY-MM-DD)',
+                                    labelStyle: TextStyle(
+                                      color: Colors.grey[400],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    prefixIcon: Icon(
+                                      Icons.cake_outlined,
+                                      color: const Color(0xFF6C63FF),
+                                    ),
+                                    suffixIcon: Icon(
+                                      Icons.calendar_today,
+                                      color: Colors.grey[400],
+                                      size: 20,
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.grey.shade50.withOpacity(0.02),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: BorderSide(
+                                        color: Colors.purple.withOpacity(0.2),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: const BorderSide(
+                                        color: Color(0xFF6C63FF),
+                                        width: 2,
+                                      ),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 16,
+                                    ),
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Enter birth date';
+                                    }
+                                    if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value)) {
+                                      return 'Use format: YYYY-MM-DD';
+                                    }
+                                    return null;
+                                  },
+                                ),
                                 const SizedBox(height: 32),
 
                                 // ==================== زر التسجيل ====================
@@ -547,7 +738,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                               : const Row(
                                             mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
-                                              Icon(Icons.person_add, size: 20),
+                                              Icon(Icons.person_add, size: 20,color: Colors.white,),
                                               SizedBox(width: 10),
                                               Text(
                                                 'Sign Up',
@@ -672,6 +863,9 @@ class _RegisterScreenState extends State<RegisterScreen>
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
           userType: _selectedUserType,
+          phone: _phoneController.text.trim(),
+          location: _locationController.text.trim(),
+          birthDate: _birthDateController.text.trim(),
         ),
       );
     }

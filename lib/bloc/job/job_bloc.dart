@@ -45,6 +45,8 @@ class JobBloc extends Bloc<JobEvent, JobState> {
       Emitter<JobState> emit,
       ) async {
 
+    emit(const JobLoading());
+
     try {
 
       // ✅ جلب الوظائف
@@ -52,10 +54,11 @@ class JobBloc extends Bloc<JobEvent, JobState> {
         category: event.category,
       );
 
+
       // ✅ جلب التقديمات الحالية للمستخدم
       final applications =
       await _jobRepository.fetchUserApplications(
-        'current_user',
+        event.userId,
       );
 
       // ✅ تخزينهم محلياً
@@ -419,11 +422,16 @@ class JobBloc extends Bloc<JobEvent, JobState> {
       category: 'business',
       salary: 'N/A',
       description: '',
+      status: 'Open',
       requirements: [],
       postedDate: DateTime.now(),
-      deadline: DateTime.now().add(const Duration(days: 30)),
+      deadline: DateTime.now().add(
+        const Duration(days: 30),
+      ),
       isRemote: false,
       experience: 'Entry-Level',
+      imageUrl: null,
+      isApplied: false,
     );
   }
 

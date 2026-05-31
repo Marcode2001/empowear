@@ -74,8 +74,6 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
     }).toList();
   }
 
-
-
   // عدد النتائج
   int get _totalResultsCount => _filteredCourses.length;
 
@@ -233,7 +231,7 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
   }
 
   // ============================================================
-  // 🃏 بناء بطاقة الكورس
+  // 🃏 بناء بطاقة الكورس (المعدلة لإظهار جميع المعلومات)
   // ============================================================
   Widget _buildCourseCard(CourseItem course) {
     return GestureDetector(
@@ -258,6 +256,7 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // العنوان والمدرب
             Row(
               children: [
                 Container(
@@ -279,13 +278,36 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
                     ],
                   ),
                 ),
-
               ],
             ),
             const SizedBox(height: 16),
 
+            // ✅ المعلومات الإضافية (المستوى، النوع، السعر، عدد الطلاب)
+            Wrap(
+              spacing: 10,
+              runSpacing: 6,
+              children: [
+                _infoChip("Level ${course.levelNumber}", Icons.bar_chart),
+                _infoChip(course.courseType, Icons.category),
+                _infoChip("${course.price} \$", Icons.attach_money),
+
+              ],
+            ),
+
+            const SizedBox(height: 8),
+
+            // ✅ الأدوات المطلوبة
+            if (course.toolsRequired.isNotEmpty)
+              Text(
+                "Tools: ${course.toolsRequired}",
+                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+
             const SizedBox(height: 12),
 
+            // زر الحصول على الشهادة
             SizedBox(
               width: double.infinity,
               child: Container(
@@ -300,7 +322,9 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
                     final levelNumber = course.levelNumber;
 
                     if (levelNumber == null) {
-                      print("❌ levelNumber is null");
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Level number not available")),
+                      );
                       return;
                     }
 
@@ -325,17 +349,40 @@ class _MyCoursesPageState extends State<MyCoursesPage> {
               ),
             ),
             const SizedBox(height: 12),
-
           ],
         ),
       ),
 
     );
+
   }
+
+
+  // ✅ دالة مساعدة لعرض المعلومات بشكل منسدل (Chip)
+  Widget _infoChip(String text, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: Colors.deepPurple),
+          const SizedBox(width: 4),
+          Text(text, style: const TextStyle(fontSize: 11)),
+        ],
+      ),
+
+    );
+
+  }
+
 }
 
 // ============================================================
-// 📖 صفحة المنهاج (Curriculum Page)
+// 📖 صفحة المنهاج (Curriculum Page) - المعدلة
 // ============================================================
 
 class CurriculumPage extends StatefulWidget {
@@ -393,7 +440,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.course.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+
         backgroundColor: Colors.deepPurple,
         centerTitle: true,
         elevation: 0,
@@ -431,7 +478,18 @@ class _CurriculumPageState extends State<CurriculumPage> {
                 : ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: _sessions.length,
-              itemBuilder: (context, index) => _buildSessionCard(_sessions[index]),
+              itemBuilder: (context, index) {
+                // ✅ إضافة مسافة في آخر عنصر
+                if (index == _sessions.length - 1) {
+                  return Column(
+                    children: [
+                      _buildSessionCard(_sessions[index]),
+                      const SizedBox(height: 60), // ✅ مسافة إضافية في نهاية الصفحة
+                    ],
+                  );
+                }
+                return _buildSessionCard(_sessions[index]);
+              },
             ),
           ),
         ],
@@ -471,14 +529,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
             style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.9)),
           ),
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildInfoChip(Icons.access_time, widget.course.totalHours != '0h' ? widget.course.totalHours : 'N/A'),
-              const SizedBox(width: 12),
-              _buildInfoChip(Icons.trending_up, '${widget.course.progress}%'),
-            ],
-          ),
+
         ],
       ),
     );
@@ -514,6 +565,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
             'No sessions available for this course yet',
             style: TextStyle(color: Colors.grey[600], fontSize: 16),
           ),
+          const SizedBox(height: 20), // ✅ مسافة إضافية في حالة عدم وجود جلسات
         ],
       ),
     );
@@ -535,7 +587,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
             gradient: const LinearGradient(colors: [Colors.deepPurple, Colors.purple]),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Icon(Icons.video_library, color: Colors.white, size: 24),
+          child: const Icon(Icons.file_copy_rounded, color: Colors.white, size: 24),
         ),
         title: Text(
           session.title,
@@ -562,7 +614,8 @@ class _CurriculumPageState extends State<CurriculumPage> {
           const Padding(
             padding: EdgeInsets.all(16),
             child: Text('No content available for this session'),
-          )
+          ),
+          const SizedBox(height: 8), // ✅ مسافة صغيرة بعد النص
         ]
             : session.contents.map((content) => _buildLessonCard(content)).toList(),
       ),

@@ -22,16 +22,22 @@ dependencies:
   webview_flutter: ^4.12.0
   video_player: ^2.9.1
   chewie: ^1.10.0
-    # مشغل فيديو متقدم مع تحكمات احترافية
   model_viewer_plus: ^1.7.0
   logger: ^2.7.0
-
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
   flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon/empowear_logo-01.png"
+  adaptive_icon_background: "#673AB7"
+  adaptive_icon_foreground: "assets/icon/empowear_logo-01.png"
+  remove_alpha_ios: true
 
 flutter:
   uses-material-design: true

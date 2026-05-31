@@ -1,3 +1,5 @@
+// profile_page.dart (Trainee Profile Page) - بدون رسالة Logged out successfully
+
 // ============================================================
 // 👤 Trainee Profile Page - مع تسجيل خروج يعمل بشكل صحيح
 // ============================================================
@@ -73,20 +75,11 @@ class _ProfilePageState extends State<ProfilePage> {
     if (confirm == true && mounted) {
       setState(() => _isLoading = true);
       try {
-        // ✅ ✅ ✅ التعديل الأهم: إعادة تعيين ChatBloc قبل تسجيل الخروج
-        // هذا يمنع بقاء بيانات المحادثات القديمة في الذاكرة
         print("🔄 [ProfilePage] Resetting ChatBloc before logout...");
         context.read<ChatBloc>().add(const ResetChatEvent());
 
-        // ✅ إرسال حدث تسجيل الخروج
         context.read<AuthBloc>().add(const LogoutEvent());
 
-        // ✅ عرض رسالة نجاح
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Logged out successfully'), backgroundColor: Colors.green),
-        );
-
-        // ✅ الانتقال إلى شاشة تسجيل الدخول باستخدام MaterialPageRoute (بدون named route)
         if (mounted) {
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -274,7 +267,7 @@ class _ProfilePageState extends State<ProfilePage> {
 }
 
 // ============================================================
-// 📁 Submitted Projects Section (تم التعديل - حذف gradeLetter البنفسجي)
+// 📁 Submitted Projects Section
 // ============================================================
 
 class _SubmittedProjectsSection extends StatefulWidget {
@@ -390,17 +383,17 @@ class _SubmittedProjectsSectionState extends State<_SubmittedProjectsSection> {
 
     switch (project.status) {
       case 'graded':
-        statusColor = Colors.green; // ✅ أخضر
+        statusColor = Colors.green;
         statusText = 'Graded';
         break;
 
       case 'pending':
-        statusColor = Colors.orange; // ✅ برتقالي
+        statusColor = Colors.orange;
         statusText = 'Pending';
         break;
 
       case 'rejected':
-        statusColor = Colors.red; // ✅ أحمر
+        statusColor = Colors.red;
         statusText = 'Rejected';
         break;
 
@@ -458,11 +451,9 @@ class _SubmittedProjectsSectionState extends State<_SubmittedProjectsSection> {
                     'Submitted: ${project.submissionDate != null ? _formatDate(project.submissionDate!) : 'Unknown'}',
                     style: TextStyle(fontSize: 10, color: Colors.grey[500]),
                   ),
-                // ✅ ✅ ✅ تم التعديل: تم حذف gradeLetter البنفسجي بالكامل من هنا
               ],
             ),
           ),
-          // ✅ تم التعديل: تكبير حجم العلامة في البطاقة الملونة
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
@@ -472,7 +463,7 @@ class _SubmittedProjectsSectionState extends State<_SubmittedProjectsSection> {
             child: Text(
               project.gradeLetter ?? statusText,
               style: TextStyle(
-                fontSize: 11,  // ✅ تم التكبير من 11 إلى 16
+                fontSize: 11,
                 fontWeight: FontWeight.bold,
                 color: (project.gradeLetter == 'F') ? Colors.red : statusColor,
               ),
@@ -489,7 +480,7 @@ class _SubmittedProjectsSectionState extends State<_SubmittedProjectsSection> {
 }
 
 // ============================================================
-// 💼 My Applications Section (لم يتغير)
+// 💼 My Applications Section
 // ============================================================
 
 class _MyApplicationsSection extends StatefulWidget {
@@ -700,7 +691,7 @@ class _MyApplicationsSectionState extends State<_MyApplicationsSection> {
 }
 
 // ============================================================
-// 📄 All Projects Page (لم يتغير)
+// 📄 All Projects Page
 // ============================================================
 
 class AllProjectsPage extends StatelessWidget {
@@ -712,7 +703,7 @@ class AllProjectsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         iconTheme: const IconThemeData(
-          color: Colors.white, // ✅ سهم الرجوع أبيض
+          color: Colors.white,
         ),
         title: const Text(
           'All Projects',

@@ -73,17 +73,20 @@ class AuthRepository {
     required String email,
     required String password,
     required UserType userType,
-    String? phone,
-    String? bio,
+    required String phone,
+    required String location,
+    required String birthDate,
   }) async {
+
     final response = await ApiService.post(
       endpoint: 'auth/register/',
       data: {
         'email': email,
         'username': name.toLowerCase().replaceAll(' ', '_'),
         'full_name': name,
-        'phone_number': phone ?? '',
-        'location': bio ?? '',
+        'birth_date': birthDate,
+        'phone_number': phone,
+        'location': location,
         'role': _userTypeToString(userType),
         'password': password,
       },
@@ -91,13 +94,29 @@ class AuthRepository {
     );
 
     if (response['success']) {
-      // بعد التسجيل الناجح، نقوم بتسجيل الدخول تلقائياً
-      return await login(email: email, password: password);
+      final data = response['data'];
+
+      final user = User.fromJson(data['user']);
+
+      final token = data['token'];
+
+      if (token != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('access_token', token);
+      }
+
+      await _saveUserData(user);
+
+      return {
+        'success': true,
+        'user': user,
+        'token': token,
+      };
     }
 
     return {
       'success': false,
-      'message': response['message'] ?? 'فشل التسجيل',
+      'message': response['message'] ?? 'Registration failed',
     };
   }
 

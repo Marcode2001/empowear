@@ -235,7 +235,7 @@ class _AIMaterialCheckerPageState extends State<AIMaterialCheckerPage> {
                           child: Text(
                             'Upload a fabric image and AI will identify the material type',
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                            style: TextStyle(fontSize: 12, color:  Colors.deepPurple.withOpacity(0.5),),
                           ),
                         ),
                       ],
@@ -250,7 +250,7 @@ class _AIMaterialCheckerPageState extends State<AIMaterialCheckerPage> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Colors.grey[700],
+                      color: Colors.deepPurple,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -294,8 +294,8 @@ class _AIMaterialCheckerPageState extends State<AIMaterialCheckerPage> {
                           'No image selected',
                           style: TextStyle(
                             fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey[600],
+
+                            color: Colors.grey[500],
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -517,7 +517,11 @@ class _AIMaterialCheckerPageState extends State<AIMaterialCheckerPage> {
 
                           Text(
                             _generatedResult!,
-                            style: const TextStyle(fontSize: 13, height: 1.6),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              height: 1.6,
+                              color: Colors.deepPurple,
+                            ),
                           ),
                         ],
                       ),

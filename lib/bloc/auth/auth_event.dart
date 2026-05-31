@@ -23,13 +23,20 @@ class RegisterEvent extends AuthEvent {
   final String name;
   final String email;
   final String password;
-  final UserType userType;  // ✅ نوع المستخدم مهم هنا
+  final UserType userType;
+
+  final String phone;
+  final String location;
+  final String birthDate;
 
   const RegisterEvent({
     required this.name,
     required this.email,
     required this.password,
     required this.userType,
+    required this.phone,
+    required this.location,
+    required this.birthDate,
   });
 }
 

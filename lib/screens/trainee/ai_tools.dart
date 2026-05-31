@@ -97,11 +97,8 @@ class AiToolsPage extends StatelessWidget {
                         const SizedBox(height: 6),
                         Text(
                           'Welcome $userName! Choose how AI can assist you',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey[600],
-                            letterSpacing: 0.5,
-                          ),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 12, color:  Colors.deepPurple.withOpacity(0.5),),
                         ),
                       ],
                     ),

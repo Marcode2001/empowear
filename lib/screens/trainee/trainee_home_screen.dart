@@ -27,7 +27,6 @@ import 'job_opportunities_page.dart';    // صفحة فرص العمل
 import 'ai_tools.dart';                  // صفحة أدوات الذكاء الاصطناعي
 import 'chat_page.dart';                 // صفحة المحادثات
 import 'profile_page.dart';              // صفحة البروفايل الشخصي
-import 'students_projects_page.dart';    // صفحة مشاريع الطلاب
 import 'uploaded_projects_page.dart';    // صفحة رفع المشاريع
 import 'register_courses_page.dart';     // صفحة تسجيل كورسات جديدة (اللي برمنّاها فوق)
 
@@ -305,43 +304,22 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 24),  // مسافة كبيرة بعد بطاقة الترحيب
 
               // ============================================================
-              // 🔲 2. مربعات الخدمات السريعة (4 أزرار)
+              // 🔲 2. مربعات الخدمات السريعة (3 أزرار في صف واحد)
               // ============================================================
-              // الصف الأول: فرص عمل + مشاريع الطلاب
               Row(
                 children: [
-                  Expanded(  // نأخذ نصف العرض
+                  Expanded(
                     child: _buildSquareCard(
                       context,
-                      title: 'Job\nOpportunities',  // عنوان الزر (يدعم سطور متعددة بـ \n)
-                      icon: Icons.work,  // أيقونة الوظيفة
-                      color: Colors.orange,  // لون الزر
+                      title: 'Job\nOpportunities',
+                      icon: Icons.work,
+                      color: Colors.orange,
                       onTap: () {
-                        // ✅ عند الضغط: ننتقل لصفحة فرص العمل
                         Navigator.push(context, MaterialPageRoute(builder: (context) => const JobOpportunitiesPage()));
                       },
                     ),
                   ),
-                  const SizedBox(width: 12),  // مسافة بين الزرين
-                  Expanded(
-                    child: _buildSquareCard(
-                      context,
-                      title: 'Students\nProject',
-                      icon: Icons.folder,
-                      color: Colors.blue,
-                      onTap: () {
-                        // ✅ عند الضغط: ننتقل لصفحة مشاريع الطلاب
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentsProjectsPage()));
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),  // مسافة بين الصفين
-
-              // الصف الثاني: رفع مشروع + تسجيل كورس
-              Row(
-                children: [
+                  const SizedBox(width: 12),
                   Expanded(
                     child: _buildSquareCard(
                       context,
@@ -349,7 +327,6 @@ class _HomePageState extends State<HomePage> {
                       icon: Icons.upload_file,
                       color: Colors.teal,
                       onTap: () {
-                        // ✅ عند الضغط: ننتقل لصفحة رفع المشروع
                         Navigator.push(
                           context,
                           MaterialPageRoute(builder: (context) => const UploadProjectPage()),
@@ -365,20 +342,16 @@ class _HomePageState extends State<HomePage> {
                       icon: Icons.add_circle,
                       color: Colors.deepPurple,
                       onTap: () {
-                        // 🚀 الانتقال لصفحة تسجيل الكورسات
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => RegisterCoursesPage(
-                              // ✅ عند التسجيل الناجح، نضيف الكورسات للقائمة في الصفحة الرئيسية
                               onRegister: (courses) {
                                 for (var course in courses) {
-                                  _addRegisteredCourse(course);  // ننادي الدالة عشان تحدث الـ BLoC
+                                  _addRegisteredCourse(course);
                                 }
                               },
-                              // ✅ عند إلغاء التسجيل، نحدث الصفحة الرئيسية
                               onUnregister: _unregisterCourse,
-                              // ✅ نمرر قائمة الكورسات المسجل فيها عشان نعرف شو نعرض في صفحة التسجيل
                               registeredCourseIds: registeredCourses.map((c) => c.id).toList(),
                             ),
                           ),

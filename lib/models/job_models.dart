@@ -19,6 +19,7 @@ class JobModel {
   final String category;
   final String salary;
   final String description;
+  final String status;
   final List<String> requirements;
   final DateTime postedDate;      // ✅ غير قابل للـ null
   final DateTime deadline;        // ✅ غير قابل للـ null
@@ -37,6 +38,7 @@ class JobModel {
     required this.category,
     required this.salary,
     required this.description,
+    required this.status,
     required this.requirements,
     required this.postedDate,     // ✅ مطلوب غير قابل للـ null
     required this.deadline,       // ✅ مطلوب غير قابل للـ null
@@ -50,6 +52,7 @@ class JobModel {
   factory JobModel.fromJson(Map<String, dynamic> json) {
 
     return JobModel(
+
 
       id: json['id']?.toString() ?? '',
 
@@ -75,6 +78,10 @@ class JobModel {
       description: json['description'] ?? '',
 
       /// ✅ الباك يرجع required_skills كنص
+
+
+      status: json['status'] ?? 'Open',
+
       requirements: json['required_skills'] != null
           ? json['required_skills']
           .toString()
@@ -151,6 +158,7 @@ class JobModel {
     String? category,
     String? salary,
     String? description,
+    String? status,
     List<String>? requirements,
     DateTime? postedDate,
     DateTime? deadline,
@@ -169,9 +177,10 @@ class JobModel {
       category: category ?? this.category,
       salary: salary ?? this.salary,
       description: description ?? this.description,
+      status: status ?? this.status,
       requirements: requirements ?? this.requirements,
-      postedDate: postedDate ?? this.postedDate,  // ✅ إذا جاء null، استخدم القيمة الحالية
-      deadline: deadline ?? this.deadline,        // ✅ إذا جاء null، استخدم القيمة الحالية
+      postedDate: postedDate ?? this.postedDate,
+      deadline: deadline ?? this.deadline,
       isRemote: isRemote ?? this.isRemote,
       experience: experience ?? this.experience,
       imageUrl: imageUrl ?? this.imageUrl,
@@ -274,6 +283,7 @@ class JobApplication {
   // ✅ تحويل من JobApplication إلى JSON
   Map<String, dynamic> toJson() {
     return {
+      'status': status,
       'id': id,
       'jobId': jobId,
       'jobTitle': jobTitle,

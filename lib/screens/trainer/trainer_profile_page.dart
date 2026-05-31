@@ -16,12 +16,12 @@ class TrainerProfilePage extends StatefulWidget {
 class _TrainerProfilePageState extends State<TrainerProfilePage> {
   bool _isLoading = false;
 
-  bool _isLoggingOut = false; // ✅ منع التكرار
+  bool _isLoggingOut = false;
 
-  final String _specialization = 'Senior Fashion Designer';
+
 
   Future<void> _logout() async {
-    if (_isLoggingOut) return; // 🚨 يمنع التكرار
+    if (_isLoggingOut) return;
     _isLoggingOut = true;
 
     final shouldLogout = await showDialog<bool>(
@@ -55,20 +55,9 @@ class _TrainerProfilePageState extends State<TrainerProfilePage> {
       try {
         print("🔄 [TrainerProfilePage] Resetting ChatBloc before logout...");
 
-        // ✅ 1. Reset chat
         context.read<ChatBloc>().add(const ResetChatEvent());
 
-        // ✅ 2. Logout auth
         context.read<AuthBloc>().add(const LogoutEvent());
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Logged out successfully'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -154,23 +143,7 @@ class _TrainerProfilePageState extends State<TrainerProfilePage> {
 
                       const SizedBox(height: 8),
 
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          _specialization,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
+
 
                       const SizedBox(height: 40),
                     ],
