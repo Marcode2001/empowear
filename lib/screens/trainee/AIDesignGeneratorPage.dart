@@ -900,7 +900,7 @@ class _AIDesignGeneratorPageState extends State<AIDesignGeneratorPage> {
                               ),
                               const SizedBox(width: 10),
                               Text(
-                                _is3DResult ? '🎮 3D Result!' : '📝 Text Result',
+                                _is3DResult ? ' 3D Result!' : ' Text Result',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,

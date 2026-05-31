@@ -1,6 +1,7 @@
 // 📄 lib/screens/trainee/payment_page.dart
 // ============================================================
 // 💳 صفحة الدفع (Payment Page) - النسخة النهائية المعدلة
+// ✅ مع تأكيد التسجيل بعد الدفع الناجح
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -57,7 +58,6 @@ class _PaymentPageState extends State<PaymentPage> {
       final courseIdInt = int.tryParse(widget.course.id) ?? 0;
       print('🔍 Looking for existing request for course: $courseIdInt');
 
-      // البحث عن طلب موجود
       final existingResponse = await ApiService.get(
         endpoint: 'enrollment-request/trainee-my-requests/',
         requireAuth: true,
@@ -68,7 +68,7 @@ class _PaymentPageState extends State<PaymentPage> {
         if (data is List) {
           for (var request in data) {
             if (request['course'] == courseIdInt &&
-                request['status'] == 'Pending')  {
+                request['request_status'] == 'Submitted') {
               _enrollmentRequestId = request['id'];
               print('✅ Found existing request: $_enrollmentRequestId');
               return;
@@ -77,7 +77,6 @@ class _PaymentPageState extends State<PaymentPage> {
         }
       }
 
-      // إنشاء طلب جديد
       print('📝 Creating new enrollment request for course: ${widget.course.id}');
 
       final response = await ApiService.post(
@@ -91,13 +90,13 @@ class _PaymentPageState extends State<PaymentPage> {
 
       if (response['success']) {
         final data = response['data'];
-        // ✅ تحسين استخراج ID من الاستجابة
         if (data is Map<String, dynamic>) {
-          // محاولة استخراج id من أماكن مختلفة
-          if (data['id'] != null) {
-            _enrollmentRequestId = data['id'];
-          } else if (data['request'] != null && data['request']['id'] != null) {
-            _enrollmentRequestId = data['request']['id'];
+          final request = data['request'];
+          if (request != null && request['id'] != null) {
+            _enrollmentRequestId = request['id'];
+            print('✅ Request ID extracted: $_enrollmentRequestId');
+          } else {
+            print('❌ Cannot extract request id: $data');
           }
           print('✅ Created new request: $_enrollmentRequestId');
         } else {
@@ -106,6 +105,34 @@ class _PaymentPageState extends State<PaymentPage> {
       }
     } catch (e) {
       print('❌ Error: $e');
+    }
+  }
+
+  // ============================================================
+  // ✅ تأكيد التسجيل بعد الدفع الناجح
+  // ============================================================
+  Future<void> _confirmEnrollment() async {
+    if (_enrollmentRequestId == null) return;
+
+    try {
+      print('📝 Confirming enrollment for request: $_enrollmentRequestId');
+
+      final response = await ApiService.post(
+        endpoint: 'enrollment-request/trainee-confirm/${_enrollmentRequestId}/',
+        data: {},
+        requireAuth: true,
+      );
+
+      print('📊 Confirm enrollment response: ${response['statusCode']}');
+      print('📊 Confirm enrollment data: ${response['data']}');
+
+      if (response['success'] || response['statusCode'] == 200 || response['statusCode'] == 201) {
+        print('✅ Enrollment confirmed successfully!');
+      } else {
+        print('⚠️ Enrollment confirmation returned unexpected response');
+      }
+    } catch (e) {
+      print('❌ Error confirming enrollment: $e');
     }
   }
 
@@ -174,8 +201,8 @@ class _PaymentPageState extends State<PaymentPage> {
 
       setState(() => _isProcessing = false);
 
-      if (response['statusCode'] == 200 ||
-          response['statusCode'] == 201) {
+      if (response['statusCode'] == 200 || response['statusCode'] == 201) {
+        await _confirmEnrollment();
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -190,8 +217,7 @@ class _PaymentPageState extends State<PaymentPage> {
         if (mounted) {
           Navigator.pop(context);
         }
-
-      }  else {
+      } else {
         String errorMessage = 'Payment failed';
         final data = response['data'];
         if (data is Map<String, dynamic>) {
@@ -384,10 +410,14 @@ class _PaymentPageState extends State<PaymentPage> {
                 ),
                 onChanged: (value) {
                   String formatted = value.replaceAll(' ', '');
-                  if (formatted.length > 16) formatted = formatted.substring(0, 16);
+                  if (formatted.length > 16) {
+                    formatted = formatted.substring(0, 16);
+                  }
                   String newText = '';
                   for (int i = 0; i < formatted.length; i++) {
-                    if (i > 0 && i % 4 == 0) newText += ' ';
+                    if (i > 0 && i % 4 == 0) {
+                      newText += ' ';
+                    }
                     newText += formatted[i];
                   }
                   if (_cardNumberController.text != newText) {
@@ -401,7 +431,6 @@ class _PaymentPageState extends State<PaymentPage> {
               const SizedBox(height: 12),
 
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: TextField(
@@ -424,7 +453,9 @@ class _PaymentPageState extends State<PaymentPage> {
                       ),
                       onChanged: (value) {
                         String formatted = value.replaceAll('/', '');
-                        if (formatted.length > 4) formatted = formatted.substring(0, 4);
+                        if (formatted.length > 4) {
+                          formatted = formatted.substring(0, 4);
+                        }
                         if (formatted.length >= 3) {
                           formatted = '${formatted.substring(0, 2)}/${formatted.substring(2)}';
                         }
@@ -471,7 +502,7 @@ class _PaymentPageState extends State<PaymentPage> {
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Colors.deepPurple, Colors.purple, Colors.pinkAccent],
+                      colors: [Colors.deepPurple, Colors.purple],
                     ),
                     borderRadius: BorderRadius.circular(30),
                   ),

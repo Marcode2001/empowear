@@ -40,6 +40,6 @@ class CertificateModel {
     if (certificateFile!.startsWith('http')) {
       return certificateFile!;
     }
-    return 'http://localhost:8000$certificateFile';
+    return 'http://192.168.1.22:8000$certificateFile';
   }
 }

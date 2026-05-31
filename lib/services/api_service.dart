@@ -17,8 +17,7 @@ class ApiService {
   // 🌐 رابط الـ API الأساسي
   // ⚠️ للبيت:  http://192.168.1.22:8000/api
   // ⚠️  (عبر USB): http://localhost:8000/api
-  //http://10.50.191.14:8000
-  static const String baseUrl = 'http://localhost:8000/api';
+  static const String baseUrl = 'http://192.168.1.22:8000/api';
 
   // مهلة الانتظار للطلبات (بالثواني)
   static const int timeoutSeconds = 60;

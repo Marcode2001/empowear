@@ -194,7 +194,7 @@ class _ReceiveStudentProjectsPageState extends State<ReceiveStudentProjectsPage>
 
                       final fullImageUrl = imageUrl.startsWith('http')
                           ? imageUrl
-                          : 'http://localhost:8000$imageUrl';
+                          : 'http://192.168.1.22:8000$imageUrl';
 
                       print('🖼️ IMAGE URL: $fullImageUrl');
 

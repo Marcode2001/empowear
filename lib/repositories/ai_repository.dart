@@ -40,7 +40,7 @@ class AIRepository {
     required String season,
     required String text,
   }) async {
-    final uri = Uri.parse('http://localhost:8000/api/api/ai/nlp/');
+    final uri = Uri.parse('http://192.168.1.22:8000/api/ai/nlp/');
     final response = await http.post(
       uri,
       body: {

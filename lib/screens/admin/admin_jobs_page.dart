@@ -70,8 +70,12 @@ class _AdminJobsScreenState extends State<AdminJobsScreen> {
       if (response['success'] == true) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Job created successfully'), backgroundColor: Colors.green),
+            const SnackBar(
+              content: Text('Job created successfully'),
+              backgroundColor: Colors.green,
+            ),
           );
+
           await _loadJobs();
         }
       } else {
@@ -80,8 +84,15 @@ class _AdminJobsScreenState extends State<AdminJobsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Failed: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
+      }
+    }
+    finally {
+      if (mounted) {
         setState(() => _isLoading = false);
       }
     }
@@ -167,13 +178,11 @@ class _AdminJobsScreenState extends State<AdminJobsScreen> {
   void _showAddEditDialog({JobModel? job}) {
     final formKey = GlobalKey<FormState>();
     final titleCtrl = TextEditingController(text: job?.title ?? '');
-    final companyCtrl = TextEditingController(text: job?.company ?? '');
     final locationCtrl = TextEditingController(text: job?.location ?? '');
-    final typeCtrl = TextEditingController(text: job?.type ?? 'Full-time');
-    final salaryCtrl = TextEditingController(text: job?.salary ?? '');
     final descriptionCtrl = TextEditingController(text: job?.description ?? '');
-    final requirementsCtrl = TextEditingController(text: job?.requirements.join('\n') ?? '');
-    final experienceCtrl = TextEditingController(text: job?.experience ?? '');
+    final requirementsCtrl = TextEditingController(
+      text: job?.requirements.join('\n') ?? '',
+    );
 
     showDialog(
       context: context,
@@ -262,25 +271,7 @@ class _AdminJobsScreenState extends State<AdminJobsScreen> {
                           validator: (v) => v == null || v.isEmpty ? 'Required' : null,
                         ),
                         const SizedBox(height: 16),
-                        TextFormField(
-                          controller: companyCtrl,
-                          decoration: InputDecoration(
-                            labelText: 'Company Name *',
-                            labelStyle: const TextStyle(color: Colors.deepPurple),
-                            prefixIcon: const Icon(Icons.business, color: Colors.deepPurple),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.deepPurple, width: 1.5),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
-                            ),
-                            filled: true,
-                            fillColor: Colors.white,
-                          ),
-                          validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                        ),
+
                         const SizedBox(height: 16),
                         Row(
                           children: [
@@ -305,73 +296,13 @@ class _AdminJobsScreenState extends State<AdminJobsScreen> {
                               ),
                             ),
                             const SizedBox(width: 16),
-                            Expanded(
-                              child: TextFormField(
-                                controller: salaryCtrl,
-                                decoration: InputDecoration(
-                                  labelText: 'Salary',
-                                  labelStyle: const TextStyle(color: Colors.deepPurple),
-                                  prefixIcon: const Icon(Icons.attach_money, color: Colors.deepPurple),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(color: Colors.deepPurple, width: 1.5),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                ),
-                              ),
-                            ),
+
                           ],
                         ),
                         const SizedBox(height: 16),
-                        DropdownButtonFormField<String>(
-                          value: typeCtrl.text,
-                          decoration: InputDecoration(
-                            labelText: 'Job Type',
-                            labelStyle: const TextStyle(color: Colors.deepPurple),
-                            prefixIcon: const Icon(Icons.work, color: Colors.deepPurple),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.deepPurple, width: 1.5),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
-                            ),
-                            filled: true,
-                            fillColor: Colors.white,
-                          ),
-                          items: const [
-                            DropdownMenuItem(value: 'Full-time', child: Text('Full-time')),
-                            DropdownMenuItem(value: 'Part-time', child: Text('Part-time')),
-                            DropdownMenuItem(value: 'Freelance', child: Text('Freelance')),
-                            DropdownMenuItem(value: 'Internship', child: Text('Internship')),
-                          ],
-                          onChanged: (value) => typeCtrl.text = value ?? 'Full-time',
-                        ),
+
                         const SizedBox(height: 16),
-                        TextFormField(
-                          controller: experienceCtrl,
-                          decoration: InputDecoration(
-                            labelText: 'Experience Level',
-                            labelStyle: const TextStyle(color: Colors.deepPurple),
-                            prefixIcon: const Icon(Icons.school, color: Colors.deepPurple),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.deepPurple, width: 1.5),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
-                            ),
-                            filled: true,
-                            fillColor: Colors.white,
-                          ),
-                        ),
+
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: descriptionCtrl,
@@ -449,20 +380,12 @@ class _AdminJobsScreenState extends State<AdminJobsScreen> {
                           if (formKey.currentState!.validate()) {
                             Navigator.pop(context);
 
-                            final requirements = requirementsCtrl.text
-                                .split('\n')
-                                .where((r) => r.trim().isNotEmpty)
-                                .toList();
-
                             final jobData = {
-                              'title': titleCtrl.text,
-                              'company': companyCtrl.text,
-                              'location': locationCtrl.text,
-                              'type': typeCtrl.text,
-                              'salary': salaryCtrl.text,
-                              'description': descriptionCtrl.text,
-                              'requirements': requirements,
-                              'experience': experienceCtrl.text,
+                              "title": titleCtrl.text.trim(),
+                              "description": descriptionCtrl.text.trim(),
+                              "required_skills": requirementsCtrl.text.trim(),
+                              "location": locationCtrl.text.trim(),
+                              "status": "Open",
                             };
 
                             if (job == null) {

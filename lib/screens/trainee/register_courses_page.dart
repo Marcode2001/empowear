@@ -106,8 +106,30 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
               print("❌ CREATE CONVERSATION ERROR: $e");
             }
 
+            // ✅ FIX 1: Refresh from backend instead of relying on local state only
+            final authState = context.read<AuthBloc>().state;
+            if (authState is AuthAuthenticated) {
+              // Reload available courses from backend to get updated registration status
+              context.read<CourseBloc>().add(
+                LoadAvailableCoursesEvent(
+                  userId: authState.user.id,
+                  userType: authState.user.userType,
+                ),
+              );
+
+              // Also reload registered courses to ensure consistency
+              final repo = CourseRepository();
+              final updatedRegisteredCourses = await repo.loadRegisteredCourses(authState.user.id);
+              setState(() {
+                registeredIds = updatedRegisteredCourses.map((c) => c.id).toList();
+              });
+            }
+
+            // Update local state as fallback
             setState(() {
-              registeredIds.add(course.id);
+              if (!registeredIds.contains(course.id)) {
+                registeredIds.add(course.id);
+              }
               final index = availableCourses.indexWhere((c) => c.id == course.id);
               if (index != -1) {
                 availableCourses[index] = availableCourses[index].copyWith(
@@ -120,11 +142,10 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
               widget.onRegister!([course]);
             }
 
-            final auth = context.read<AuthBloc>().state;
-            if (auth is AuthAuthenticated) {
+            if (authState is AuthAuthenticated) {
               context.read<ChatBloc>().add(
                 LoadConversationsEvent(
-                  userId: auth.user.id,
+                  userId: authState.user.id,
                   userType: UserType.trainee,
                 ),
               );
@@ -199,8 +220,11 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
             setState(() {
               availableCourses = state.availableCourses;
               for (var course in availableCourses) {
-                if (course.isRegistered && !registeredIds.contains(course.id)) {
-                  registeredIds.add(course.id);
+                if (course.isRegistered) {
+                  registeredIds = availableCourses
+                      .where((c) => c.isRegistered)
+                      .map((c) => c.id)
+                      .toList();
                 }
               }
               _isLoading = false;
@@ -233,12 +257,11 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
           padding: const EdgeInsets.all(16),
           itemCount: availableCourses.length,
           itemBuilder: (context, index) {
-            // ✅ إضافة مسافة في آخر عنصر
             if (index == availableCourses.length - 1) {
               return Column(
                 children: [
                   _buildCourseCard(availableCourses[index]),
-                  const SizedBox(height: 80), // ✅ مسافة كبيرة في نهاية الصفحة لرفع المحتوى عن زرار الموبايل
+                  const SizedBox(height: 80),
                 ],
               );
             }
@@ -337,15 +360,12 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
             ),
           ),
 
-          // ============================================================
-          // ✅ المعلومات الأساسية (بشكل منظم)
-          // ============================================================
+          // Basic info
           Padding(
             padding: const EdgeInsets.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // الصف الأول: اسم المدرب والمستوى
                 Row(
                   children: [
                     Icon(Icons.person, size: 16, color: Colors.deepPurple),
@@ -379,10 +399,8 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
 
                 const SizedBox(height: 12),
 
-                // الصف الثاني: نوع الكورس والسعر
                 Row(
                   children: [
-                    // نوع الكورس
                     Expanded(
                       child: Row(
                         children: [
@@ -395,7 +413,6 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
                         ],
                       ),
                     ),
-                    // السعر
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
@@ -419,7 +436,6 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
 
                 const SizedBox(height: 12),
 
-                // ✅ الأدوات المطلوبة (إذا وجدت)
                 if (course.toolsRequired.isNotEmpty)
                   Container(
                     padding: const EdgeInsets.all(8),
@@ -446,7 +462,6 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
 
                 const SizedBox(height: 12),
 
-                // ✅ زر عرض الجلسات (منظم بشكل أفضل)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -491,7 +506,7 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
             ),
           ),
 
-          // ✅ Expanded sessions - فقط للكورسات المسجلة
+          // Expanded sessions - only for registered courses
           if (isExpanded && isRegistered) ...[
             const Divider(height: 1),
             Padding(
@@ -555,12 +570,9 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
               color: Colors.deepPurple.withOpacity(0.05),
               borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),
             ),
-            child: Row(
+            child: const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-
-
-              ],
+              children: [],
             ),
           ),
         ],
@@ -679,7 +691,6 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
             child: Icon(icon, size: 18, color: color),
           ),
           const SizedBox(width: 10),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -696,7 +707,6 @@ class _RegisterCoursesPageState extends State<RegisterCoursesPage> {
               ],
             ),
           ),
-
           IconButton(
             icon: const Icon(Icons.open_in_new, size: 18, color: Colors.deepPurple),
             onPressed: () {
