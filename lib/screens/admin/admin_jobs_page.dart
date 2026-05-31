@@ -177,94 +177,324 @@ class _AdminJobsScreenState extends State<AdminJobsScreen> {
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(job == null ? 'Add Job Opportunity' : 'Edit Job Opportunity'),
-        content: SingleChildScrollView(
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: titleCtrl,
-                  decoration: const InputDecoration(labelText: 'Job Title *'),
-                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                ),
-                TextFormField(
-                  controller: companyCtrl,
-                  decoration: const InputDecoration(labelText: 'Company Name *'),
-                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                ),
-                TextFormField(
-                  controller: locationCtrl,
-                  decoration: const InputDecoration(labelText: 'Location'),
-                ),
-                DropdownButtonFormField<String>(
-                  value: typeCtrl.text,
-                  decoration: const InputDecoration(labelText: 'Job Type'),
-                  items: const [
-                    DropdownMenuItem(value: 'Full-time', child: Text('Full-time')),
-                    DropdownMenuItem(value: 'Part-time', child: Text('Part-time')),
-                    DropdownMenuItem(value: 'Freelance', child: Text('Freelance')),
-                    DropdownMenuItem(value: 'Internship', child: Text('Internship')),
-                  ],
-                  onChanged: (value) => typeCtrl.text = value ?? 'Full-time',
-                ),
-                TextFormField(
-                  controller: salaryCtrl,
-                  decoration: const InputDecoration(labelText: 'Salary'),
-                ),
-                TextFormField(
-                  controller: descriptionCtrl,
-                  decoration: const InputDecoration(labelText: 'Description'),
-                  maxLines: 3,
-                ),
-                TextFormField(
-                  controller: requirementsCtrl,
-                  decoration: const InputDecoration(labelText: 'Requirements (one per line)'),
-                  maxLines: 3,
-                ),
-                TextFormField(
-                  controller: experienceCtrl,
-                  decoration: const InputDecoration(labelText: 'Experience Level'),
-                ),
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white,
+                Color(0xFFF3E5F5),
               ],
             ),
           ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                Navigator.pop(context);
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header with gradient
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Colors.deepPurple, Colors.purple],
+                  ),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        job == null ? Icons.add_business : Icons.edit_note,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        job == null ? 'Add New Job' : 'Edit Job',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Form fields
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextFormField(
+                          controller: titleCtrl,
+                          decoration: InputDecoration(
+                            labelText: 'Job Title *',
+                            labelStyle: const TextStyle(color: Colors.deepPurple),
+                            prefixIcon: const Icon(Icons.title, color: Colors.deepPurple),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.deepPurple, width: 1.5),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                          validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: companyCtrl,
+                          decoration: InputDecoration(
+                            labelText: 'Company Name *',
+                            labelStyle: const TextStyle(color: Colors.deepPurple),
+                            prefixIcon: const Icon(Icons.business, color: Colors.deepPurple),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.deepPurple, width: 1.5),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                          validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: locationCtrl,
+                                decoration: InputDecoration(
+                                  labelText: 'Location',
+                                  labelStyle: const TextStyle(color: Colors.deepPurple),
+                                  prefixIcon: const Icon(Icons.location_on, color: Colors.deepPurple),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(color: Colors.deepPurple, width: 1.5),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: TextFormField(
+                                controller: salaryCtrl,
+                                decoration: InputDecoration(
+                                  labelText: 'Salary',
+                                  labelStyle: const TextStyle(color: Colors.deepPurple),
+                                  prefixIcon: const Icon(Icons.attach_money, color: Colors.deepPurple),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(color: Colors.deepPurple, width: 1.5),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          value: typeCtrl.text,
+                          decoration: InputDecoration(
+                            labelText: 'Job Type',
+                            labelStyle: const TextStyle(color: Colors.deepPurple),
+                            prefixIcon: const Icon(Icons.work, color: Colors.deepPurple),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.deepPurple, width: 1.5),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: 'Full-time', child: Text('Full-time')),
+                            DropdownMenuItem(value: 'Part-time', child: Text('Part-time')),
+                            DropdownMenuItem(value: 'Freelance', child: Text('Freelance')),
+                            DropdownMenuItem(value: 'Internship', child: Text('Internship')),
+                          ],
+                          onChanged: (value) => typeCtrl.text = value ?? 'Full-time',
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: experienceCtrl,
+                          decoration: InputDecoration(
+                            labelText: 'Experience Level',
+                            labelStyle: const TextStyle(color: Colors.deepPurple),
+                            prefixIcon: const Icon(Icons.school, color: Colors.deepPurple),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.deepPurple, width: 1.5),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: descriptionCtrl,
+                          decoration: InputDecoration(
+                            labelText: 'Description',
+                            labelStyle: const TextStyle(color: Colors.deepPurple),
+                            prefixIcon: const Icon(Icons.description, color: Colors.deepPurple),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.deepPurple, width: 1.5),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                          maxLines: 3,
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: requirementsCtrl,
+                          decoration: InputDecoration(
+                            labelText: 'Requirements (one per line)',
+                            labelStyle: const TextStyle(color: Colors.deepPurple),
+                            prefixIcon: const Icon(Icons.checklist, color: Colors.deepPurple),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.deepPurple, width: 1.5),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                          maxLines: 3,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Action buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.grey[700],
+                        side: BorderSide(color: Colors.grey[300]!),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Colors.deepPurple, Colors.purple],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (formKey.currentState!.validate()) {
+                            Navigator.pop(context);
 
-                final requirements = requirementsCtrl.text
-                    .split('\n')
-                    .where((r) => r.trim().isNotEmpty)
-                    .toList();
+                            final requirements = requirementsCtrl.text
+                                .split('\n')
+                                .where((r) => r.trim().isNotEmpty)
+                                .toList();
 
-                final jobData = {
-                  'title': titleCtrl.text,
-                  'company': companyCtrl.text,
-                  'location': locationCtrl.text,
-                  'type': typeCtrl.text,
-                  'salary': salaryCtrl.text,
-                  'description': descriptionCtrl.text,
-                  'requirements': requirements,
-                  'experience': experienceCtrl.text,
-                };
+                            final jobData = {
+                              'title': titleCtrl.text,
+                              'company': companyCtrl.text,
+                              'location': locationCtrl.text,
+                              'type': typeCtrl.text,
+                              'salary': salaryCtrl.text,
+                              'description': descriptionCtrl.text,
+                              'requirements': requirements,
+                              'experience': experienceCtrl.text,
+                            };
 
-                if (job == null) {
-                  _createJob(jobData);
-                } else {
-                  _updateJob(job.id, jobData);
-                }
-              }
-            },
-            child: const Text('Save'),
+                            if (job == null) {
+                              _createJob(jobData);
+                            } else {
+                              _updateJob(job.id, jobData);
+                            }
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          job == null ? 'Create Job' : 'Update Job',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -280,7 +510,6 @@ class _AdminJobsScreenState extends State<AdminJobsScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        // ✅ تغيير لون سهم الرجوع إلى الأبيض
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -336,10 +565,10 @@ class _AdminJobsScreenState extends State<AdminJobsScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: ListTile(
               leading: CircleAvatar(
-                backgroundColor: Colors.teal.withOpacity(0.1),
+                backgroundColor: Colors.deepPurple.withOpacity(0.1),
                 child: Text(
                   job.company.isNotEmpty ? job.company[0].toUpperCase() : 'J',
-                  style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold),
+                  style: const TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.bold),
                 ),
               ),
               title: Text(job.title, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -373,7 +602,6 @@ class _AdminJobsScreenState extends State<AdminJobsScreen> {
           );
         },
       ),
-      // ✅ تغيير لون علامة الزائد إلى الأبيض
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddEditDialog(),
         backgroundColor: Colors.deepPurple,

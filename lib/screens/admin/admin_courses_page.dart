@@ -1,6 +1,6 @@
 // 📄 lib/screens/admin/admin_courses_page.dart
 // ============================================================
-// 📚 صفحة إدارة الكورسات للأدمن
+// 📚 Admin Course Management Page
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -165,74 +165,284 @@ class _AdminCoursesScreenState extends State<AdminCoursesScreen> {
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Add New Course'),
-        content: SingleChildScrollView(
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: titleCtrl,
-                  decoration: const InputDecoration(labelText: 'Course Title *'),
-                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                ),
-                TextFormField(
-                  controller: descCtrl,
-                  decoration: const InputDecoration(labelText: 'Description'),
-                  maxLines: 2,
-                ),
-                TextFormField(
-                  controller: levelCtrl,
-                  decoration: const InputDecoration(labelText: 'Level Number *'),
-                  keyboardType: TextInputType.number,
-                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                ),
-                TextFormField(
-                  controller: typeCtrl,
-                  decoration: const InputDecoration(labelText: 'Course Type (Theory/Practical)'),
-                ),
-                TextFormField(
-                  controller: priceCtrl,
-                  decoration: const InputDecoration(labelText: 'Price *'),
-                  keyboardType: TextInputType.number,
-                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                ),
-                TextFormField(
-                  controller: toolsCtrl,
-                  decoration: const InputDecoration(labelText: 'Tools Required'),
-                ),
-                TextFormField(
-                  controller: trainerIdCtrl,
-                  decoration: const InputDecoration(labelText: 'Trainer Profile ID *'),
-                  keyboardType: TextInputType.number,
-                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                ),
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white,
+                Color(0xFFF3E5F5),
               ],
             ),
           ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                Navigator.pop(context);
-                _createCourse(
-                  title: titleCtrl.text,
-                  description: descCtrl.text,
-                  levelNumber: int.parse(levelCtrl.text),
-                  courseType: typeCtrl.text,
-                  price: double.parse(priceCtrl.text),
-                  toolsRequired: toolsCtrl.text,
-                  trainerProfile: int.parse(trainerIdCtrl.text),
-                );
-              }
-            },
-            child: const Text('Create'),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header with gradient and icon
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Colors.deepPurple, Colors.purple],
+                  ),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.add_circle_outline, color: Colors.white, size: 28),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Add New Course',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Form fields
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextFormField(
+                          controller: titleCtrl,
+                          decoration: InputDecoration(
+                            labelText: 'Course Title *',
+                            labelStyle: const TextStyle(color: Colors.deepPurple),
+                            prefixIcon: const Icon(Icons.title, color: Colors.deepPurple),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.deepPurple, width: 1.5),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                          validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: descCtrl,
+                          decoration: InputDecoration(
+                            labelText: 'Description',
+                            labelStyle: const TextStyle(color: Colors.deepPurple),
+                            prefixIcon: const Icon(Icons.description, color: Colors.deepPurple),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.deepPurple, width: 1.5),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                          maxLines: 2,
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: levelCtrl,
+                                decoration: InputDecoration(
+                                  labelText: 'Level Number *',
+                                  labelStyle: const TextStyle(color: Colors.deepPurple),
+                                  prefixIcon: const Icon(Icons.format_list_numbered, color: Colors.deepPurple),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(color: Colors.deepPurple, width: 1.5),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                ),
+                                keyboardType: TextInputType.number,
+                                validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: TextFormField(
+                                controller: priceCtrl,
+                                decoration: InputDecoration(
+                                  labelText: 'Price *',
+                                  labelStyle: const TextStyle(color: Colors.deepPurple),
+                                  prefixIcon: const Icon(Icons.attach_money, color: Colors.deepPurple),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(color: Colors.deepPurple, width: 1.5),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                ),
+                                keyboardType: TextInputType.number,
+                                validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: typeCtrl,
+                          decoration: InputDecoration(
+                            labelText: 'Course Type (Theory/Practical)',
+                            labelStyle: const TextStyle(color: Colors.deepPurple),
+                            prefixIcon: const Icon(Icons.category, color: Colors.deepPurple),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.deepPurple, width: 1.5),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: toolsCtrl,
+                          decoration: InputDecoration(
+                            labelText: 'Tools Required',
+                            labelStyle: const TextStyle(color: Colors.deepPurple),
+                            prefixIcon: const Icon(Icons.build, color: Colors.deepPurple),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.deepPurple, width: 1.5),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: trainerIdCtrl,
+                          decoration: InputDecoration(
+                            labelText: 'Trainer Profile ID *',
+                            labelStyle: const TextStyle(color: Colors.deepPurple),
+                            prefixIcon: const Icon(Icons.person, color: Colors.deepPurple),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.deepPurple, width: 1.5),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                          keyboardType: TextInputType.number,
+                          validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Action buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.grey[700],
+                        side: BorderSide(color: Colors.grey[300]!),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Colors.deepPurple, Colors.purple],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (formKey.currentState!.validate()) {
+                            Navigator.pop(context);
+                            _createCourse(
+                              title: titleCtrl.text,
+                              description: descCtrl.text,
+                              levelNumber: int.parse(levelCtrl.text),
+                              courseType: typeCtrl.text,
+                              price: double.parse(priceCtrl.text),
+                              toolsRequired: toolsCtrl.text,
+                              trainerProfile: int.parse(trainerIdCtrl.text),
+                            );
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Create Course',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -248,7 +458,6 @@ class _AdminCoursesScreenState extends State<AdminCoursesScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        // ✅ تغيير لون سهم الرجوع إلى الأبيض
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -306,7 +515,6 @@ class _AdminCoursesScreenState extends State<AdminCoursesScreen> {
             elevation: 2,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: ListTile(
-              // ✅ فتح الجلسات
               onTap: () {
                 Navigator.push(
                   context,
@@ -336,7 +544,6 @@ class _AdminCoursesScreenState extends State<AdminCoursesScreen> {
                   ),
                 ),
               ),
-              // ✅ عنوان الكورس
               title: Text(
                 course.title,
                 style: const TextStyle(
@@ -356,7 +563,6 @@ class _AdminCoursesScreenState extends State<AdminCoursesScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  // ✅ تغيير لون السعر إلى الأخضر
                   Text(
                     '\$${course.price}',
                     style: const TextStyle(
@@ -389,7 +595,6 @@ class _AdminCoursesScreenState extends State<AdminCoursesScreen> {
           );
         },
       ),
-      // ✅ تغيير لون علامة الزائد إلى الأبيض
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddDialog,
         backgroundColor: Colors.deepPurple,
